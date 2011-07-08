@@ -40,7 +40,7 @@ if ($file === false) return false;
 #write contents
 $fitem = fopen($s_dir . "/" . $file, "w");
 if ($fitem === false) return false;
-fwrite($fitem, $data);
+fwrite($fitem, base64_decode($data));
 fclose($fitem);
 $f_state = $s_dir . "_" . $source . ".state";
 #lg("fstate: $f_state");

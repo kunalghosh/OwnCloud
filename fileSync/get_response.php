@@ -232,7 +232,8 @@ function replace_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$sourc
 global $user_dir;	
 if ($auth) {
 	$result = "200";
-	$s_dir = $user_dir . "/" . $lsrv;
+	#$s_dir = $user_dir . "/" . $lsrv;
+	$s_dir = $user_dir;
 	$f_state = $s_dir . "_" . $source . ".state";
 	if ($MoreData == 1)
 	{

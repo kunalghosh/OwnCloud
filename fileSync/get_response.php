@@ -38,7 +38,8 @@ function put_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$datas) {
 	$put_response = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</CmdRef><Cmd>Put</Cmd><SourceRef>$loc_cli</SourceRef>";
 	if ($auth) {
 		global $user_dir;
-		$s_dir = $user_dir . "/" . $loc_srv;
+		#$s_dir = $user_dir . "/" . $loc_srv;
+		$s_dir = $user_dir;
 		$f_state = $user_dir . "/" . $loc_srv . ".state";
 		#lg("userdir: $user_dir; sdir: $s_dir; last: $f_state");
 		if (! is_dir($s_dir)) mkdir($s_dir);
@@ -61,7 +62,8 @@ return $put_response;
 function alert_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$type,$rlast,$rnext,$source) {
 	if ($auth) {
 		global $user_dir;
-		$s_dir = $user_dir . "/" . $loc_srv;
+		#$s_dir = $user_dir . "/" . $loc_srv;
+		$s_dir = $user_dir;
 		$f_state = $user_dir . "/" . $loc_srv . "_" . $source . ".state";
 		lg("userdir: $user_dir; sdir: $s_dir; last: $f_state");
 		if (! is_dir($s_dir)) mkdir($s_dir);
@@ -187,7 +189,8 @@ function add_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$source,$M
 global $user_dir;	
 if ($auth) {
 	$result = "201"; #If the command completed successfully, then the (201) Item added exception condition is created by the command. (c) syncml_sync_represent_v11_20020215
-	$s_dir = $user_dir . "/" . $lsrv;
+	#$s_dir = $user_dir . "/" . $lsrv;
+	$s_dir = $user_dir;
 	if ($MoreData == 1)
 	{
 		lg("incomplete item. buffering in $item.tmp");
@@ -292,7 +295,8 @@ function delete_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$slcli,$source) {
 global $user_dir;	
 if ($auth) {
 	$result = "200";
-	$s_dir = $user_dir . "/" . $lsrv;
+	#$s_dir = $user_dir . "/" . $lsrv;
+	$s_dir = $user_dir;
 	//if (! file_exists($s_dir . "/" . $item)) {
 	if (! exists_item($s_dir,$item,$source)) {
 		$result = "211"; #Item not deleted

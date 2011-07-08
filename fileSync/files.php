@@ -18,7 +18,14 @@ return $data;
 
 function new_item($s_dir,$item,$data,$source) { #external
 #creates item, mapping, hash, ...
-if (! is_dir($s_dir)) mkdir($s_dir);
+$temp = explode("/",$item);
+lg("Exploded");
+array_pop($temp);
+lg("POPPED");
+$temp2 = implode("/",$temp);
+$temp2 = $s_dir . "/" . $temp2;
+lg("IMPLODED $temp2");
+if (! is_dir($temp2)) mkdir($temp2);
 #is item here really not exists? Is it for shure? There was some checks in add_response().. Yep, there is a check.
 make_mapping($s_dir,$item,$source);
 #make map: map_$realfn=$item

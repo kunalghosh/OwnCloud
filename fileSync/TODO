@@ -1,0 +1,4 @@
+08-Jul-2010
+
+Problem : If a file modification is made in server , it is sync'ed to the client (using the stock Funambol fsync example client).
+	But a modification in the client is not sync'ed to the server :(

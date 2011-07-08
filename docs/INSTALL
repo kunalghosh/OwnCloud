@@ -1,0 +1,4 @@
+For the fileSync Server to work (/owncloud/fileSync):
+1.Create a directory /var/www/html/sync 
+	All the data sync'ed goes in here.
+	(NOTE: This would be changed to /owncloud/data directory in the future)

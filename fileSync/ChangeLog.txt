@@ -1,0 +1,117 @@
+2011-01-30
+
+* fixed a bug of anchors mismatch when sync type = 201, 203 or 205
+
+2011-01-26
+
+* added support for one-way sync
+* thinkikg about mysql and total rewrite
+
+2011-01-22
+
+* added files.php, which contains functions responsible for storing items as files
+* now mapping is supported. But some devices cannot handle nnon-numeric names
+* 2 hours spent for bug, appearing because of clearstatcache missing
+
+2011-01-18
+
+* now Command can contain multiple Items and still be properly handled
+* added clear_log parameter to config/config.xml
+* added $Id$ tag, so logs from different versions can be distinguished
+
+2011-01-14
+
+* fixed a bug in SourceRef in Replace command
+* added support for Large Objects
+* added wbxml compression measurement
+* added '\n' to responce to make progress.xml more easy to read
+
+2011-01-10
+
+* made some cleanup on index.php and others
+* moved functions to states.php and config.php
+* created config/.htaccess to protect config
+* change hard coded dirs (of log.txt, ...) to $base_dir
+
+2011-01-02
+
+* changed year to 2011. Happy new year
+* DONE:user creation can be set in config
+* index.php prepared for functional deload
+* changed '<?' to '<?php' in all php files
+
+2010-12-29
+
+* added conflict resolutions (conflicts.php)
+* added corresponding settings in config.xml
+* added actions in case of config.xml corrupted (see log.txt)
+
+2010-12-25
+
+* added return codes for Add and Delete functions (logging in case of error)
+* DONE:there should be a check if file exists
+* some fix in anchors comparing algorithm (both anchors = 0 case)
+* fixed Final handling
+* added logging of NumberOfChanges (just some nice feature)
+* tried to do Conflict detection - now Server wins. But at least conflit
+noticed.
+
+2010-12-21
+
+* fixed malfunctioned Delete function
+* fixed a nasty bug making duplicate items every sync if several targets
+selected (e.g. tasks+notes or contacts+calendar or ...)
+
+2010-12-17
+
+* Slow sync implemented (other types still not)
+* made a bug (syntax). fixed a bug (syntax)
+
+2010-12-13
+
+* fixed non-working Delete for client (changed "Source" to "Target")
+* TODO,DONE: changed the way $source_s is produced (reflected on .status file names)
+* TODO,DONE: Send '<NumberOfChanges>X</NumberOfChanges>'
+* DONE: Make shure that item data is free from "]]>"
+* DONE: do comparation for Replace elemets (Replace suport in Sync)
+
+2010-12-09
+
+* added support for syncing still buggy.
+* fixed some bugs in map_response
+* new TODO: Make shure that item data is free from "]]>"
+* new TODO: do comparation for Replace elemets (Replace suport in Sync)
+
+2010-12-05
+
+* added support for per-device anchors storage, so if you sync with 1 account
+by 2 devices - it will be handled correctly. No fallback to slow sync.
+* changed name of state file. Now it includes SourceID (IMEI).
+* now hashes of files are saved in STATE file
+* DONE: Correct hashes handling in case of Map (+Add, Replace and Delete)
+* logging decreased
+* Made a strategy for do_sync. Implementation pending. We are close to produce!
+* Some debug in put_response.
+* Readme adjusted
+
+2010-12-01
+
+* changed month do december ;) It's -20C outside, snow and windy.
+* changed the way information stores in sessions file. it should not grow anymore.
+* made a switch for logs and exchage files in config.xml
+* new TODO: make sessions per-user. Maybe parse all users?..
+* DONE: make a switch in config.xml for progress.xml creation
+* type of sync is now saved with anchors.
+* Sync now called when Final is present, i.e. no sync response during client sync elemets.
+
+2010-11-27
+
+* put_response marked as deprecated
+* new file sync_send.php
+* Trying to send server sync. Adding items successull.
+* Main sync analysis ahead. But it should be aesy to make slow sync to get working server for backup usage.
+* Added basic client-<Map> support.
+* new TODO: make a switch in config.xml for progress.xml creation.
+* TODO,DONE: renaming, when <Map> arrives.
+* Debugged delete and replace response functions
+

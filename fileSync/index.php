@@ -290,6 +290,14 @@ foreach($syncbod->children() as $key => $value) {
 				$slsrv = $ssvalue->Target->LocURI;
 				if (empty($slcli)) $slcli = $ssvalue->Source; #SyncLocClient
 				if (empty($slsrv)) $slsrv = $ssvalue->Target; #SyncLocServer
+				#solutions to get server location $slsrv incase it is empty from the previous step
+				#Solution 1:
+				#if (empty($slsrv) && !empty($slcli)) $slsrv = $slcli;#the following commented solution is better !
+				#Solution 2: (IMHO gives a more accurate location because it uses previously specified location (directory) that the file must be present: $lsrv
+				if(!empty($slcli)) $slcli_array = explode("/",$slcli);
+				if (empty($slsrv) && !empty($slcli)) $slsrv = $lsrv . "/" . end($slcli_array);				
+				#lg("NEW SLSRV $slsrv");
+				lg("Both Must have values slcli = $slcli slsrv = $slsrv ");#if slsrv is empty then the server doesnt know where to save the file :)
 				$sdata = $ssvalue->Data;
 				$MoreData = 0;
 				#lg("$key -> $skey -> Item[$slcli]");

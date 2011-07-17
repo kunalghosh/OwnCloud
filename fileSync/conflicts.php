@@ -20,6 +20,7 @@ function conflict_dup($s_dir,$item,$data,$source,&$result) {
 		lg("somewhy renaming failed");
 		return false;
 	};
+	lg("Renamed $s_dir/$item to $s_dir/$newname");
 	return true;
 }
 

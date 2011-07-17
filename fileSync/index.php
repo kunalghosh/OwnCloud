@@ -286,41 +286,41 @@ foreach($syncbod->children() as $key => $value) {
 				if (in_array($skey, array("Add", "Replace", "Delete"))) {
 					foreach ($svalue->children() as $sskey => $ssvalue) {
 						if ($sskey == "Item") {
-				$slcli = $ssvalue->Source->LocURI;
-				$slsrv = $ssvalue->Target->LocURI;
-				if (empty($slcli)) $slcli = $ssvalue->Source; #SyncLocClient
-				if (empty($slsrv)) $slsrv = $ssvalue->Target; #SyncLocServer
-				#solutions to get server location $slsrv incase it is empty from the previous step
-				#Solution 1:
-				#if (empty($slsrv) && !empty($slcli)) $slsrv = $slcli;#the following commented solution is better !
-				#Solution 2: (IMHO gives a more accurate location because it uses previously specified location (directory) that the file must be present: $lsrv
-				if(!empty($slcli)) $slcli_array = explode("/",$slcli);
-				if (empty($slsrv) && !empty($slcli)) $slsrv = $lsrv . "/" . end($slcli_array);				
-				#lg("NEW SLSRV $slsrv");
-				lg("Both Must have values slcli = $slcli slsrv = $slsrv ");#if slsrv is empty then the server doesnt know where to save the file :)
-				$sdata = $ssvalue->Data;
-				$MoreData = 0;
-				#lg("$key -> $skey -> Item[$slcli]");
-				if (isset($ssvalue->MoreData)) $MoreData = 1;
-				switch ($skey) {
-					case "Add":
-						$add = add_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$sdata,$source_s,$MoreData);
-						$send .= $add;
-						$i++;
-						break;
-					case "Replace":
-						$replace = replace_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$sdata,$source_s,$MoreData);
-						$send .= $replace;
-						$i++;
-						break;
-					case "Delete":
-						$delete = delete_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$source_s);
-						$send .= $delete;
-						$i++;
-						break;
-					default:
-						break;
-				}; //switch
+							$slcli = $ssvalue->Source->LocURI;
+							$slsrv = $ssvalue->Target->LocURI;
+							if (empty($slcli)) $slcli = $ssvalue->Source; #SyncLocClient
+							if (empty($slsrv)) $slsrv = $ssvalue->Target; #SyncLocServer
+							#solutions to get server location $slsrv incase it is empty from the previous step
+							#Solution 1:
+							#if (empty($slsrv) && !empty($slcli)) $slsrv = $slcli;#the following commented solution is better !
+							#Solution 2: (IMHO gives a more accurate location because it uses previously specified location (directory) that the file must be present: $lsrv
+							if(!empty($slcli)) $slcli_array = explode("/",$slcli);
+							if (empty($slsrv) && !empty($slcli)) $slsrv = $lsrv . "/" . end($slcli_array);				
+							#lg("NEW SLSRV $slsrv");
+							lg("Both Must have values slcli = $slcli slsrv = $slsrv ");#if slsrv is empty then the server doesnt know where to save the file :)
+							$sdata = $ssvalue->Data;
+							$MoreData = 0;
+							#lg("$key -> $skey -> Item[$slcli]");
+							if (isset($ssvalue->MoreData)) $MoreData = 1;
+							switch ($skey) {
+								case "Add":
+									$add = add_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$sdata,$source_s,$MoreData);
+									$send .= $add;
+									$i++;
+									break;
+								case "Replace":
+									$replace = replace_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$sdata,$source_s,$MoreData);
+									$send .= $replace;
+									$i++;
+									break;
+								case "Delete":
+									$delete = delete_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$source_s);
+									$send .= $delete;
+									$i++;
+									break;
+								default:
+									break;
+							}; //switch
 						}; //if ($sskey == "Item")
 					}; //foreach ($svalue->children()..
 				}; //if (in_array($skey..

@@ -245,6 +245,7 @@ if ($auth) {
 		//Damn typo in spec's
 	} else {
 		$tmpfn = $s_dir . "/" . $item . ".tmp";
+		lg("REPLACE CONTACT ---- $tmpfn");
 		if (file_exists($tmpfn))
 		{
 			lg("item concatenated from $item.tmp");
@@ -291,19 +292,20 @@ $replace = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</Cm
 return $replace;
 }
 
-function delete_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$slcli,$source) {
+function delete_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$source) {
 //($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli)
 global $user_dir;	
 if ($auth) {
+	#lg("LOG DELETE CONTACTS: cmdref = $cmdref mesgid = $mesgid auth = $auth lcli = $lcli lsrv = $lsrv");
 	$result = "200";
 	#$s_dir = $user_dir . "/" . $lsrv;
 	$s_dir = $user_dir;
 	//if (! file_exists($s_dir . "/" . $item)) {
 	if (! exists_item($s_dir,$item,$source)) {
 		$result = "211"; #Item not deleted
-		lg($s_dir . "/" . $item . " not exists");
+		lg("DELETING :" . $s_dir . "/" . $item . " doesn't exist ");
 	} else {
-		remove_item($s_dir,$slcli,$source);
+		remove_item($s_dir,$item,$source);
 	};
 } else {
 	$result = "401";

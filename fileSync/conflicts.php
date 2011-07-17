@@ -15,12 +15,22 @@ function conflict_cli($s_dir,$item,$data,$source,&$result) {
 function conflict_dup($s_dir,$item,$data,$source,&$result) {
 	$result = "209";
 	$newname = $item . date('YmdHis') . mt_rand();
+	/*
 	lg("duping $item to $newname");
 	if (! rename("$s_dir/$item", "$s_dir/$newname")) {
 		lg("somewhy renaming failed");
 		return false;
 	};
 	lg("Renamed $s_dir/$item to $s_dir/$newname");
+	*/
+	lg("CONFLICT RESOLUTION DUP:");
+	lg("COPY OLD FILE TO A NEW RENAMED FILE WITH TIMESTAMP:");
+	if (! copy("$s_dir/$item", "$s_dir/$newname")) {
+		lg("somewhy copying failed");
+		return false;
+	};
+	lg("WRITE NEW DATA INTO ORIGINAL FILE: $item");
+	write_item($s_dir,$item,$data,$source);
 	return true;
 }
 

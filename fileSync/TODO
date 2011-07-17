@@ -8,3 +8,4 @@ Problem 1: If a file modification is made in server , it is sync'ed to the clien
 Solution 1: The server is now able to propagate changes made in the server to the client as well as changes made in the client are
 	saved in the server and old revisions of the file are saved as timestamped versions.
 
+Problem 2: The data exchange is not very efficient, if a file is change the complete file is sent again not the diff alone :(

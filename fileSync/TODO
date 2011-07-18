@@ -14,3 +14,6 @@ Problem 2: The data exchange is not very efficient, if a file is change the comp
 
 Problem 3: When a sync uses <MoreData> tag when a file is split across multiple xml files, then IMO the server doesn't 
 	send a success response after </final> and so the client ends with "Synchronization error: Server Failure: server returned error code -1"
+	
+Problem 4: In files.php exists_item() It must verify the hash of the two files if they exist and return a different response code (maybe -2)
+to indicate that the files have a same name but different hashes.

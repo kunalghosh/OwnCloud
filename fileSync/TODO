@@ -17,3 +17,10 @@ Problem 3: When a sync uses <MoreData> tag when a file is split across multiple 
 	
 Problem 4: In files.php exists_item() It must verify the hash of the two files if they exist and return a different response code (maybe -2)
 to indicate that the files have a same name but different hashes.
+
+NOTE: 
+1. (ref: problem 3) The problem doesn't occurr when large (1 MB) text files are sent. so the problem is most likely related to binary
+files.
+2. (ref: problem 3) The problem occurrs when large binary files are sync'ed. The error occurr after the last file (after the binary file)
+the last file can be binary or text.
+3. (ref: problem 3) Error seems to occurr somewhere in the finalization step of sync , only when dealing with binary files.

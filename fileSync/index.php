@@ -11,7 +11,7 @@ include("get_response.php");
 include("config.php");
 parse_config(); #config.php
 
-lg('working. $Id$');
+lg('working. $Id$'); #what is the use of this ?
 
 //Lets open our log file for debugging purposes
 if ($keep_exchange > 0) {
@@ -283,6 +283,7 @@ foreach($syncbod->children() as $key => $value) {
 			foreach($value->children() as $skey => $svalue) {
 				$scmdid = $svalue->CmdID;
 				lg("Sync: $skey; src: $slcli");
+				lg($svalue->children());
 				if (in_array($skey, array("Add", "Replace", "Delete"))) {
 					foreach ($svalue->children() as $sskey => $ssvalue) {
 						if ($sskey == "Item") {

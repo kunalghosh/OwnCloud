@@ -1,3 +1,14 @@
+2011-07-23
+
+* The integration into ownCloud has been refactored. Now the fileSync folder is on the app folder
+* Added appinfo folder for integration with owncloud and all the neccesary files
+* Added templates folder with all the neccesary templates for the vcf web interface editor
+* Added editor.php to be the main script of the vcf web interface editor
+* Renamed config.php to config_fileSync.php in order to avoid problems importing base.php lib from owncloud
+* Renamed files.php to files_fileSync.php in order to avoid problems importing base.php lib from owncloud
+    *Require call on index.php modified properly to that
+* Added settings.php to let the app be configurated. The file is empty by now
+
 2011-07-08
 
 * Rudimentary integration into ownCloud.

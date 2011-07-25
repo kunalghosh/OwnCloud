@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<phpsyncml>
+    <config>
+		<!-- unused:
+		<database>
+			<dbuser>DB_Username</dbuser>
+			<dbpass>DB_Password</dbpass>
+			<dbtype>DB_Type</dbtype>
+		</database>
+		-->
+		<!-- unused now. should be no, yes or auto
+		<compression>wbxml</compression> <!+- xml or wbxml +->
+		-->
+        <base_dir>/var/www/owncloud2/data</base_dir>  <!-- set base directory of phpsyncml -->
+        <do_log>1</do_log>
+        <clear_log>0</clear_log>
+        <keep_exchange>1</keep_exchange>
+        <conflicts>
+            <action1>merge</action1> <!-- server, client, duplicate, delete, merge -->
+            <action2>duplicate</action2>
+        </conflicts>
+        <unrestricted>1</unrestricted> <!-- allow user creation -->
+    </config>
+</phpsyncml>

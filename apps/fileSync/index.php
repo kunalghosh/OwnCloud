@@ -2,13 +2,15 @@
 //ini_set('display_errors','Off');
 error_reporting(0);
 
+require_once('../../lib/base.php');
+
 include("logging.php");
 include("sync_send.php");
 include("conflicts.php");
 include("states.php");
-include("files.php");
+include("files_fileSync.php");
 include("get_response.php");
-include("config.php");
+include("config_fileSync.php");
 parse_config(); #config.php
 
 lg('working. $Id$'); #what is the use of this ?
@@ -30,6 +32,7 @@ if ($ct == "application/vnd.syncml+wbxml") { $input_type = "wbxml"; }
 	else {
 		$input_type = "unknown"; //pretend that it is xml
 		//echo "<html>I only speak SyncML.</html>";
+                echo "<html>Please, refer to the application help to know how it works.</html>";
 		exit();
 	};
 lg("Recognized type: $input_type");
@@ -100,7 +103,9 @@ if (empty($user)) {
 	unset($sess_f,$sess_p,$sess_A,$par_name,$par_value);
 };
 $user_dir = $base_dir . '/' . $user;
-if ((! is_dir($user_dir)) && ($unrestricted > 0)) { //DONE:and user creation is allowed
+if ((! is_dir($user_dir)) && ($unrestricted > 0)  ) { //DONE:and user creation is allowed
+// Also if the user exists in the owncloud's database!
+// 
 	##mk_user($user_dir, $pass)
 	mkdir($user_dir);
 	lg("dir created: $user_dir");

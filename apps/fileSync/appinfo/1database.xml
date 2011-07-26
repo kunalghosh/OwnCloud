@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<!--not tested yet -->
+
+<database>
+	
+    <name>*dbname*</name>
+    <create>true</create>
+    <overwrite>false</overwrite>
+	
+    <charset>latin1</charset>
+	
+    <table>
+		
+        <name>*dbprefix*fileSync</name>
+		
+        <declaration>
+			
+            <field>
+                <name>user</name>
+                <type>VARCHAR(64)</type>
+                <default></default>
+                <notnull>true</notnull>
+                <autoincrement>0</autoincrement>
+                <length>64</length>
+            </field>
+			
+            <field>
+                <name>session</name>
+                <type>integer</type>
+                <default>
+                </default>
+                <notnull>false</notnull>
+                <length>200</length>
+            </field>
+			
+            <field>
+                <name>passkey</name>
+                <type>text</type>
+                <default></default>
+                <notnull>false</notnull>
+                <length>200</length>
+            </field>
+			
+        </declaration>
+
+    </table>
+</database>

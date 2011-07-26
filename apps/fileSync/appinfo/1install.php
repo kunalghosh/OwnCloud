@@ -14,7 +14,6 @@ if (file_exists('../config/config.xml')) {
 
 
 
-
     $configxml->config->base_dir = $CONFIG_DATADIRECTORY;
 
 

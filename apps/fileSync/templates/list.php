@@ -7,6 +7,7 @@
 $dir = $_['dir'];
 $contacts = scandir($dir);
 
+//echo $dir;
 
 
 echo "<ul>";

@@ -28,7 +28,7 @@ OC_APP::setActiveNavigationEntry("syncPimData_editor");
 
 
 //use OC api to retrieve that info 
-$contacts_dir = $CONFIG_DATADIRECTORY . '/' . OC_USER::getUser() . '/card/';
+$contacts_dir = $CONFIG_DATADIRECTORY;
 
 //echo $contacts_dir;
 

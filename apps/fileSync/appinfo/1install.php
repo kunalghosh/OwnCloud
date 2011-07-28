@@ -8,18 +8,16 @@ require_once('../../../lib/base.php');
 //It should set up the config.xml file with info provided by the oc api
 
 
-if (file_exists('../config/config.xml')) {
-    $configxml = simplexml_load_file('../config/config.xml');
+$configxml = simplexml_load_file('../config/config.xml');
 
 
 
 
-    $configxml->config->base_dir = $CONFIG_DATADIRECTORY;
+$configxml->config->base_dir = $SERVERROOT.'/data';
+
+//echo $SERVERROOT.'/data';
 
 
 
-    echo $configxml->asXML('../config/config.xml');
-} else {
-    exit('Failed to open config.xml.');
-}
+$configxml->asXML('../config/config.xml');
 ?>

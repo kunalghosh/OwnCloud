@@ -35,10 +35,10 @@ if ($ct == "application/vnd.syncml+wbxml") {
     $input_type = "unknown"; //pretend that it is xml
     //echo "<html>I only speak SyncML.</html>";
     //$user="owncloud";
-    /*if (OC_USER::checkPassword("owncloud", "owncloud")){
-        echo "it exists";
-    }
-    */
+    /* if (OC_USER::checkPassword("owncloud", "owncloud")){
+      echo "it exists";
+      }
+     */
     echo "<html>Please, refer to the application help to know how it works.</html>";
     exit();
 };
@@ -77,6 +77,7 @@ if (($mesgid == 1) and ($clear_log > 0)) {
     lg("Log cleared due to 1st message");
 };
 
+
 lg("Session: $sessid Message: $mesgid");
 lg("Source: $source");
 lg("Target: $target");
@@ -86,6 +87,7 @@ $user = $A[0];
 $pass = $A[1];
 unset($A);
 lg("user: $user pass: $pass");
+
 /////////////////////////////////////////////////parsing user profile
 if (empty($user)) {
     //$user = "anonymous";
@@ -116,8 +118,14 @@ if (empty($user)) {
 
 //TODO: change the dir in order to work properly with the dir structure of OC (added /files)
 
-$user_dir = $base_dir . '/' . $user . '/files' ;
-if ((!is_dir($user_dir)) && ($unrestricted > 0) && OC_USER::userExists($user)) { //DONE:and user creation is allowed
+
+$user_dir = $base_dir . '/' . $user . '/files';
+
+function fileExists($path) {
+    return (@fopen($path, "r") == true);
+}
+
+if (!fileExists($user_dir . '/' . "profile") && ($unrestricted > 0) && OC_USER::userExists($user)) { //DONE:and user creation is allowed
 // Also if the user exists in the owncloud's database!
     /* TODO:
      * 
@@ -134,6 +142,7 @@ if ((!is_dir($user_dir)) && ($unrestricted > 0) && OC_USER::userExists($user)) {
     fclose($user_f);
     ##/mk_user($user_dir, $pass)
 };
+
 if (!($unrestricted > 0))
     lg("user $user tried to login to restricted server");
 #lg("creating USER array");
@@ -195,10 +204,10 @@ function user_profile_get($key) {
 //get passkey from header:
 
 
-/*TODO: we should remove all dependeces from the profile file, like below. For now , we check both on the
+/* TODO: we should remove all dependeces from the profile file, like below. For now , we check both on the
  * OC database and the profile file, but we must use only OCdatabase
  */
-
+lg("6");
 if (array_key_exists("passkey", $_GET))
     $passkey = $_GET["passkey"];
 $authenticated = (bool) (
@@ -218,10 +227,10 @@ if ($authenticated) {
     //Transaction start should be started here
     //TODO: make a copy of userdir till the end of transaction (and lock it)
     #lg(">>>>" . $USER["session"]);
-    
-    /*TODO: read all info from the oc database
+
+    /* TODO: read all info from the oc database
      */
-    
+
     user_profile_add("session", $sessid);
     #lg(">>>>" . $USER["session"]);
     if ((!isset($passkey)) OR ($passkey == "")) {

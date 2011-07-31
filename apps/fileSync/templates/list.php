@@ -15,14 +15,15 @@ foreach ($contacts as $contact) {
 
 
     //$contact = base64_decode($rawContact);
-
-    //echo $contact;
-    //echo "<br>";
+/*
+    echo "<br>";
+    echo $contact;
+    echo "<br>";
     //echo $rawContact;
-
+*/
     if (($contact != ".") AND ($contact != "..")) {
-        if (get_readable_name($dir . $contact) != "") {
-            echo '<li><a href="editor.php?contact=' . $contact . '&mode=view">' . get_readable_name($dir . $contact) . '</a></li>';
+        if (get_readable_name($dir.'/' . $contact) != "") {
+            echo '<li><a href="editor.php?contact=' . $contact . '&mode=view">' . get_readable_name($dir.'/' . $contact) . '</a></li>';
         }
     }
 }

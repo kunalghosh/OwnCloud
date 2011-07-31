@@ -30,7 +30,7 @@ OC_APP::setActiveNavigationEntry("syncPimData_editor");
 //use OC api to retrieve that info 
 $contacts_dir = $CONFIG_DATADIRECTORY;
 
-//echo $contacts_dir;
+echo $contacts_dir;
 
 if (!(isset($_GET['mode']))) {
     $mode = "list";
@@ -86,7 +86,7 @@ if ($mode == "list") {
 } elseif ($mode == "view") {
 
     $tmpl = new OC_TEMPLATE("fileSync", "view", "user");
-    $url = $contacts_dir . $_GET['contact'];
+    $url = $contacts_dir .'/'. $_GET['contact'];
     $tmpl->assign("url", $url);
 }
 

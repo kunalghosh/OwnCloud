@@ -10,7 +10,7 @@
 		<!-- unused now. should be no, yes or auto
 		<compression>wbxml</compression> <!+- xml or wbxml +->
 		-->
-		<base_dir>/var/www/html/sync</base_dir>  <!-- set base directory of phpsyncml -->
+		<base_dir>/home/kunal/SERVER_FILES</base_dir>  <!-- set base directory of phpsyncml -->
 		<do_log>1</do_log>
 		<clear_log>0</clear_log>
 		<keep_exchange>1</keep_exchange>

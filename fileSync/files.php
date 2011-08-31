@@ -79,8 +79,9 @@ foreach ($STATE as $key => $value) {
 	if (strtolower($value) == strtolower($item)) {
 		#$result = substr($key, 4); #remove "map_" # this would convert the file name to lower :(
 		lg("ITEM = $item KEY = $key VALUE = $value");		
-		$temp = explode("/",$item);
-		$result = $temp[1];
+		#$temp = explode("/",$item);
+		#$result = $temp[1];
+		$result = $value;
 		break;
 	};
 };

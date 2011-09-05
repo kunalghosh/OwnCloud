@@ -97,16 +97,17 @@ class OC_L10N{
 	/**
 	 * @brief Translating
 	 * @param $text The text we need a translation for
+	 * @param $parameters default:array() Parameters for sprintf
 	 * @returns Translation or the same text
 	 *
 	 * Returns the translation. If no translation is found, $text will be
 	 * returned.
 	 */
-	public function t($text){
+	public function t($text, $parameters = array()){
 		if(array_key_exists($text, $this->translations)){
-			return $this->translations[$text];
+			return vsprintf( $this->translations[$text], $parameters );
 		}
-		return $text;
+		return vsprintf( $text, $parameters );
 	}
 
 	/**
@@ -146,16 +147,11 @@ class OC_L10N{
 			// If you add something don't forget to add it to $localizations
 			// at the top of the page
 			case 'date':
-				if( is_string( $data )) $data = strtotime( $data );
-				return date( $this->localizations['date'], $data );
-				break;
 			case 'datetime':
-				if( is_string( $data )) $data = strtotime( $data );
-				return date( $this->localizations['datetime'], $data );
-				break;
 			case 'time':
-				if( is_string( $data )) $data = strtotime( $data );
-				return date( $this->localizations['time'], $data );
+				if( $data instanceof DateTime ) return $data->format($this->localizations[$type]);
+				elseif( is_string( $data )) $data = strtotime( $data );
+				return date( $this->localizations[$type], $data );
 				break;
 			default:
 				return false;
@@ -200,8 +196,8 @@ class OC_L10N{
 		else{
 			$available=self::findAvailableLanguages( $app );
 		}
-		if( OC_USER::getUser() && OC_PREFERENCES::getValue( OC_USER::getUser(), 'core', 'lang' )){
-			$lang = OC_PREFERENCES::getValue( OC_USER::getUser(), 'core', 'lang' );
+		if( OC_User::getUser() && OC_Preferences::getValue( OC_User::getUser(), 'core', 'lang' )){
+			$lang = OC_Preferences::getValue( OC_User::getUser(), 'core', 'lang' );
 			self::$language = $lang;
 			if( array_search( $lang, $available ) !== false ){
 				return $lang;

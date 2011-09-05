@@ -1,7 +1,8 @@
-<form id="identity" action='#' method='post'>
-	<fieldset>
-		<legend><?php echo $l->t( 'OpenID identity' );?></legend>
-		<label for='input_identity'>OpenID identity for <b><?php echo $_['user'];?></b></label><br/>
-		<input name='input_identity' id='input_identity' value="<?php echo $_['identity'];?>"/><input type='submit' value='Save'/>
+<form id="openidform">
+	<fieldset class="personalblock">
+		<strong>OpenID</strong>
+		<?php echo ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].OC::$WEBROOT.'/?'; echo OC_User::getUser(); ?><br /><em><?php echo $l->t('you can authenticate to other sites with this address');?></em><br />
+		<label for="identity"><?php echo $l->t('Authorized OpenID provider');?></label>
+		<input type="text" name="identity" id="identity" value="<?php echo $_['identity']; ?>" placeholder="<?php echo $l->t('Your address at Wordpress, Identi.ca, &hellip;');?>" />
 	</fieldset>
 </form>

@@ -37,7 +37,7 @@
  * This class provides an easy way for apps to store config values in the
  * database.
  */
-class OC_APPCONFIG{
+class OC_Appconfig{
 	/**
 	 * @brief Get all apps using the config
 	 * @returns array with app ids
@@ -114,10 +114,10 @@ class OC_APPCONFIG{
 	 */
 	public static function setValue( $app, $key, $value ){
 		// Does the key exist? yes: update. No: insert
-		$exists = self::getValue( $app, $key, null );
+		$exists = self::getKeys( $app );
 
 		// null: does not exist
-		if( is_null( $exists )){
+		if( !in_array( $key, $exists )){
 			$query = OC_DB::prepare( 'INSERT INTO *PREFIX*appconfig ( appid, configkey, configvalue ) VALUES( ?, ?, ? )' );
 			$query->execute( array( $app, $key, $value ));
 		}
@@ -158,4 +158,3 @@ class OC_APPCONFIG{
 		return true;
 	}
 }
-?>

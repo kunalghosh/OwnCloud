@@ -9,7 +9,7 @@ require_once('../../lib/base.php');
 // header( "Content-Type: application/jsonrequest" );
 
 // Check if we are a user
-if( !OC_USER::isLoggedIn()){
+if( !OC_User::isLoggedIn()){
 	echo json_encode( array( "status" => "error", "data" => array( "message" => "Authentication error" )));
 	exit();
 }
@@ -40,17 +40,19 @@ $query=strtolower($query);
 
 $files=array();
 
-if(OC_FILESYSTEM::is_dir($base)){
-	$dh = OC_FILESYSTEM::opendir($base);
-	if(substr($base,-1,1)!='/'){
-		$base=$base.'/';
-	}
-	while (($file = readdir($dh)) !== false) {
-		if ($file != "." && $file != ".."){
-			if(substr(strtolower($file),0,$queryLen)==$query){
-				$item=$base.$file;
-				if((!$dirOnly or OC_FILESYSTEM::is_dir($item))){
-					$files[]=(object)array('id'=>$item,'label'=>$item,'name'=>$item);
+if(OC_Filesystem::file_exists($base) and OC_Filesystem::is_dir($base)){
+	$dh = OC_Filesystem::opendir($base);
+	if($dh){
+		if(substr($base,-1,1)!='/'){
+			$base=$base.'/';
+		}
+		while (($file = readdir($dh)) !== false) {
+			if ($file != "." && $file != ".."){
+				if(substr(strtolower($file),0,$queryLen)==$query){
+					$item=$base.$file;
+					if((!$dirOnly or OC_Filesystem::is_dir($item))){
+						$files[]=(object)array('id'=>$item,'label'=>$item,'name'=>$item);
+					}
 				}
 			}
 		}

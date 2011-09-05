@@ -1,12 +1,9 @@
 <?php
 
-OC_APP::register( array( "order" => 2, "id" => "files", "name" => "Files" ));
+$l=new OC_L10N('files');
 
-OC_APP::addNavigationEntry( array( "id" => "files_index", "order" => 1, "href" => OC_HELPER::linkTo( "files", "index.php" ), "icon" => OC_HELPER::imagePath( "files", "home.png" ), "name" => "Files" ));
-OC_APP::addAdminPage( array( "id" => "files_administration", "order" => 3, "href" => OC_HELPER::linkTo( "files", "admin.php" ), "name" => "Files", "icon" => OC_HELPER::imagePath( "files", "folder.png" )));
+OC_App::register( array( "order" => 2, "id" => "files", "name" => "Files" ));
 
-
-// To add navigation sub entries use
-// OC_APP::addNavigationSubEntry( "files_index", array( ... ));
+OC_App::addNavigationEntry( array( "id" => "files_index", "order" => 1, "href" => OC_Helper::linkTo( "files", "index.php" ), "icon" => OC_Helper::imagePath( "core", "places/home.svg" ), "name" => $l->t("Files") ));
 
 ?>

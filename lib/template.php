@@ -22,63 +22,87 @@
  */
 
 /**
- * @brief make OC_HELPER::linkTo available as a simple function
+ * @brief make OC_Helper::linkTo available as a simple function
  * @param $app app
  * @param $file file
  * @returns link to the file
  *
- * For further information have a look at OC_HELPER::linkTo
+ * For further information have a look at OC_Helper::linkTo
  */
 function link_to( $app, $file ){
-	return OC_HELPER::linkTo( $app, $file );
+	return OC_Helper::linkTo( $app, $file );
 }
 
 /**
- * @brief make OC_HELPER::imagePath available as a simple function
+ * @brief make OC_Helper::imagePath available as a simple function
  * @param $app app
  * @param $image image
  * @returns link to the image
  *
- * For further information have a look at OC_HELPER::imagePath
+ * For further information have a look at OC_Helper::imagePath
  */
 function image_path( $app, $image ){
-	return OC_HELPER::imagePath( $app, $image );
+	return OC_Helper::imagePath( $app, $image );
 }
 
 /**
- * @brief make OC_HELPER::mimetypeIcon available as a simple function
+ * @brief make OC_Helper::mimetypeIcon available as a simple function
  * @param $mimetype mimetype
  * @returns link to the image
  *
- * For further information have a look at OC_HELPER::mimetypeIcon
+ * For further information have a look at OC_Helper::mimetypeIcon
  */
 function mimetype_icon( $mimetype ){
-	return OC_HELPER::mimetypeIcon( $mimetype );
+	return OC_Helper::mimetypeIcon( $mimetype );
 }
 
 /**
- * @brief make OC_HELPER::humanFileSize available as a simple function
+ * @brief make OC_Helper::humanFileSize available as a simple function
  * @param $bytes size in bytes
  * @returns size as string
  *
- * For further information have a look at OC_HELPER::humanFileSize
+ * For further information have a look at OC_Helper::humanFileSize
  */
 function human_file_size( $bytes ){
-	return OC_HELPER::humanFileSize( $bytes );
+	return OC_Helper::humanFileSize( $bytes );
 }
 
 function simple_file_size($bytes) {
 	$mbytes = round($bytes/(1024*1024),1);
 	if($bytes == 0) { return '0'; }
-	else if($mbytes < 0.1) { return '< 0.1'; }
-	else if($mbytes > 1000) { return '> 1000'; }
+	else if($mbytes < 0.1) { return '&lt; 0.1'; }
+	else if($mbytes > 1000) { return '&gt; 1000'; }
 	else { return number_format($mbytes, 1); }
 }
+
+function relative_modified_date($timestamp) {
+    $l=new OC_L10N('template');
+	$timediff = time() - $timestamp;
+	$diffminutes = round($timediff/60);
+	$diffhours = round($diffminutes/60);
+	$diffdays = round($diffhours/24);
+	$diffmonths = round($diffdays/31);
+	$diffyears = round($diffdays/365);
+
+	if($timediff < 60) { return $l->t('seconds ago'); }
+	else if($timediff < 120) { return $l->t('1 minute ago'); }
+	else if($timediff < 3600) { return $l->t('%d minutes ago',$diffminutes); }
+	//else if($timediff < 7200) { return '1 hour ago'; }
+	//else if($timediff < 86400) { return $diffhours.' hours ago'; }
+	else if((date('G')-$diffhours) > 0) { return $l->t('today'); }
+	else if((date('G')-$diffhours) > -24) { return $l->t('yesterday'); }
+	else if($timediff < 2678400) { return $l->t('%d days ago',$diffdays); }
+	else if($timediff < 5184000) { return $l->t('last month'); }
+	else if((date('n')-$diffmonths) > 0) { return $l->t('months ago'); }
+	else if($timediff < 63113852) { return $l->t('last year'); }
+	else { return $l->t('years ago'); }
+}
+
 
 /**
  * This class provides the templates for owncloud.
  */
-class OC_TEMPLATE{
+class OC_Template{
 	private $renderas; // Create a full page?
 	private $application; // template Application
 	private $vars; // Vars
@@ -91,11 +115,11 @@ class OC_TEMPLATE{
 	 * @param $app app providing the template
 	 * @param $file name of the tempalte file (without suffix)
 	 * @param $renderas = ""; produce a full page
-	 * @returns OC_TEMPLATE object
+	 * @returns OC_Template object
 	 *
-	 * This function creates an OC_TEMPLATE object.
+	 * This function creates an OC_Template object.
 	 *
-	 * If $renderas is set, OC_TEMPLATE will try to produce a full page in the
+	 * If $renderas is set, OC_Template will try to produce a full page in the
 	 * according layout. For now, renderas can be set to "guest", "user" or
 	 * "admin".
 	 */
@@ -116,12 +140,14 @@ class OC_TEMPLATE{
 		}
 
 		// Templates have the ending .php
+		$path = $template;
 		$template .= "$name.php";
 
 		// Set the private data
 		$this->renderas = $renderas;
 		$this->application = $app;
 		$this->template = $template;
+		$this->path = $path;
 		$this->vars = array();
 		$this->l10n = new OC_L10N($app);
 	}
@@ -177,15 +203,12 @@ class OC_TEMPLATE{
 	 *
 	 * This function proceeds the template and prints its output.
 	 */
-	public function printPage()
-	{
+	public function printPage(){
 		$data = $this->fetchPage();
-		if( $data === false )
-		{
+		if( $data === false ){
 			return false;
 		}
-		else
-		{
+		else{
 			print $data;
 			return true;
 		}
@@ -198,46 +221,32 @@ class OC_TEMPLATE{
 	 * This function proceeds the template. If $this->renderas is set, it will
 	 * will produce a full page.
 	 */
-	public function fetchPage()
-	{
+	public function fetchPage(){
 		// global Data we need
 		global $WEBROOT;
 		global $SERVERROOT;
 		$data = $this->_fetch();
 
-		if( $this->renderas )
-		{
+		if( $this->renderas ){
 			// Decide which page we show
-			if( $this->renderas == "user" )
-			{
-				$page = new OC_TEMPLATE( "core", "layout.user" );
-				$search=new OC_TEMPLATE( 'core', 'part.searchbox');
-				$search->assign('searchurl',OC_HELPER::linkTo( 'search', 'index.php' ));
-				$page->assign('searchbox', $search->fetchPage());
+			if( $this->renderas == "user" ){
+				$page = new OC_Template( "core", "layout.user" );
+				$page->assign('searchurl',OC_Helper::linkTo( 'search', 'index.php' ));
+				if(array_search(OC_APP::getCurrentApp(),array('settings','admin','help'))!==false){
+					$page->assign('bodyid','body-settings');
+				}else{
+					$page->assign('bodyid','body-user');
+				}
 
 				// Add navigation entry
-				$page->assign( "navigation", OC_APP::getNavigation());
-			}
-			elseif( $this->renderas == "admin" )
-			{
-				$page = new OC_TEMPLATE( "core", "layout.admin" );
-				$search=new OC_TEMPLATE( 'core', 'part.searchbox');
-				$search->assign('searchurl',OC_HELPER::linkTo( 'search', 'index.php' ));
-				$page->assign('searchbox', $search->fetchPage());
-				
-				// Add menu data
-				if( OC_GROUP::inGroup( $_SESSION["user_id"], "admin" )){
-					$page->assign( "adminnavigation", OC_APP::getAdminNavigation());
-				}
-				$page->assign( "settingsnavigation", OC_APP::getSettingsNavigation());
-			}
-			else
-			{
-				$page = new OC_TEMPLATE( "core", "layout.guest" );
+				$page->assign( "navigation", OC_App::getNavigation());
+				$page->assign( "settingsnavigation", OC_App::getSettingsNavigation());
+			}else{
+				$page = new OC_Template( "core", "layout.guest" );
 			}
 
 			// Add the css and js files
-			foreach(OC_UTIL::$scripts as $script){
+			foreach(OC_Util::$scripts as $script){
 				if(is_file("$SERVERROOT/apps/$script.js" )){
 					$page->append( "jsfiles", "$WEBROOT/apps/$script.js" );
 				}
@@ -248,7 +257,7 @@ class OC_TEMPLATE{
 					$page->append( "jsfiles", "$WEBROOT/core/$script.js" );
 				}
 			}
-			foreach(OC_UTIL::$styles as $style){
+			foreach(OC_Util::$styles as $style){
 				if(is_file("$SERVERROOT/apps/$style.css" )){
 					$page->append( "cssfiles", "$WEBROOT/apps/$style.css" );
 				}
@@ -262,7 +271,7 @@ class OC_TEMPLATE{
 			
 			// Add custom headers
 			$page->assign('headers',$this->headers);
-			foreach(OC_UTIL::$headers as $header){
+			foreach(OC_Util::$headers as $header){
 				$page->append('headers',$header);
 			}
 			
@@ -270,8 +279,7 @@ class OC_TEMPLATE{
 			$page->assign( "content", $data );
 			return $page->fetchPage();
 		}
-		else
-		{
+		else{
 			return $data;
 		}
 	}
@@ -298,6 +306,32 @@ class OC_TEMPLATE{
 	}
 
 	/**
+	 * @brief Include template
+	 * @returns returns content of included template
+	 *
+	 * Includes another template. use <?php echo $this->inc('template'); ?> to
+	 * do this.
+	 */
+	public function inc( $file, $additionalparams = null ){
+		// $_ erstellen
+		$_ = $this->vars;
+		$l = $this->l10n;
+
+		if( !is_null($additionalparams)){
+			$_ = array_merge( $additionalparams, $this->vars );
+		}
+
+		// Einbinden
+		ob_start();
+		include( $this->path.$file.'.php' );
+		$data = ob_get_contents();
+		ob_end_clean();
+
+		// Daten zurückgeben
+		return $data;
+	}
+
+	/**
 	 * @brief Shortcut to print a simple page for users
 	 * @param $application The application we render the template for
 	 * @param $name Name of the template
@@ -305,7 +339,7 @@ class OC_TEMPLATE{
 	 * @returns true/false
 	 */
 	public static function printUserPage( $application, $name, $parameters = array() ){
-		$content = new OC_TEMPLATE( $application, $name, "user" );
+		$content = new OC_Template( $application, $name, "user" );
 		foreach( $parameters as $key => $value ){
 			$content->assign( $key, $value );
 		}
@@ -320,7 +354,7 @@ class OC_TEMPLATE{
 	 * @returns true/false
 	 */
 	public static function printAdminPage( $application, $name, $parameters = array() ){
-		$content = new OC_TEMPLATE( $application, $name, "admin" );
+		$content = new OC_Template( $application, $name, "admin" );
 		foreach( $parameters as $key => $value ){
 			$content->assign( $key, $value );
 		}
@@ -335,12 +369,10 @@ class OC_TEMPLATE{
 	 * @returns true/false
 	 */
 	public static function printGuestPage( $application, $name, $parameters = array() ){
-		$content = new OC_TEMPLATE( $application, $name, "guest" );
+		$content = new OC_Template( $application, $name, "guest" );
 		foreach( $parameters as $key => $value ){
 			$content->assign( $key, $value );
 		}
 		return $content->printPage();
 	}
 }
-
-?>

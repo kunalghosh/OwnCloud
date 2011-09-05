@@ -38,7 +38,7 @@
  * This class is responsible for reading and writing config.php, the very basic
  * configuration file of owncloud.
  */
-class OC_CONFIG{
+class OC_Config{
 	// associative array key => value
 	private static $cache = array();
 
@@ -177,9 +177,13 @@ class OC_CONFIG{
 		$content .= ");\n?>\n";
 
 		// Write the file
-		file_put_contents( "$SERVERROOT/config/config.php", $content );
-
+		$result=@file_put_contents( "$SERVERROOT/config/config.php", $content );
+		if(!$result) {
+			$tmpl = new OC_Template( '', 'error', 'guest' );
+			$tmpl->assign('errors',array(1=>array('error'=>"Can't write into config directory 'config'",'hint'=>"You can usually fix this by setting the owner of 'config' to the user that the web server uses (".exec('whoami').")")));
+			$tmpl->printPage();
+			exit;
+		}
 		return true;
 	}
 }
-?>

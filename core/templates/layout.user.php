@@ -9,7 +9,8 @@
 		<?php endforeach; ?>
 		<script type="text/javascript">
 			var oc_webroot = '<?php global $WEBROOT; echo $WEBROOT; ?>';
-		// </script>
+			var oc_current_user = '<?php echo OC_User::getUser() ?>';
+		</script>
 		<?php foreach($_['jsfiles'] as $jsfile): ?>
 			<script type="text/javascript" src="<?php echo $jsfile; ?>"></script>
 		<?php endforeach; ?>
@@ -19,36 +20,41 @@
 				foreach($header['attributes'] as $name=>$value){
 					echo "$name='$value' ";
 				};
-				echo '>';
-				echo $header['text'];
-				echo '</'.$header['tag'].'>';
+				echo '/>';
 			?>
-			<script type="text/javascript" src="<?php echo $jsfile; ?>"></script>
 		<?php endforeach; ?>
 	</head>
 
-	<body id="body-user">
-		<div id="header">
-			<a href="<?php echo link_to('', 'index.php'); ?>" title="" id="owncloud"><img src="<?php echo image_path('', 'owncloud-logo-small-white.png'); ?>" alt="ownCloud" /></a>
-			<?php echo $_['searchbox']?>
-			<ul id="metanav">
-				<li><a href="<?php echo link_to('settings', 'index.php'); ?>" title="Settings"><img src="<?php echo image_path('', 'layout/settings.png'); ?>"></a></li>
-				<li><a href="<?php echo link_to('', 'index.php'); ?>?logout=true" title="Log out"><img src="<?php echo image_path('', 'layout/logout.png'); ?>"></a></li>
+	<body id="<?php echo $_['bodyid'];?>">
+		<header><div id="header">
+			<a href="<?php echo link_to('', 'index.php'); ?>" title="" id="owncloud"><img class="svg" src="<?php echo image_path('', 'logo-wide.svg'); ?>" alt="ownCloud" /></a>
+			<form class="searchbox" action="#" method="post">
+				<input id="searchbox" class="svg" type="search" name="query" value="<?php if(isset($_POST['query'])){echo $_POST['query'];};?>" autocomplete="off" />
+			</form>
+			<a id="logout" href="<?php echo link_to('', 'index.php'); ?>?logout=true"><img class="svg" alt="<?php echo $l->t('Log out');?>" src="<?php echo image_path('', 'actions/logout.svg'); ?>" /></a>
+		</div></header>
+
+		<nav><div id="navigation">
+			<ul id="apps" class="svg">
+				<?php foreach($_['navigation'] as $entry): ?>
+					<li><a style="background-image:url(<?php echo $entry['icon']; ?>)" href="<?php echo $entry['href']; ?>" title="" <?php if( $entry['active'] ): ?> class="active"<?php endif; ?>><?php echo $entry['name']; ?></a>
+					</li>
+				<?php endforeach; ?>
 			</ul>
-		</div>
 
-		<div id="main">
-			<div id="plugins">
-				<ul>
-					<?php foreach($_['navigation'] as $entry): ?>
-						<li><a style="background-image:url(<?php echo $entry['icon']; ?>)" href="<?php echo $entry['href']; ?>" title="" <?php if( $entry['active'] ): ?> class="active"<?php endif; ?>><?php echo $entry['name']; ?></a></li>
-					<?php endforeach; ?>
-				</ul>
-			</div>
+			<ul id="settings" class="svg">
+				<img id="expand" class="svg" alt="<?php echo $l->t('Settings');?>" src="<?php echo image_path('', 'actions/settings.svg'); ?>" />
+				<span style="display:none"><?php echo $l->t('Settings');?></span>
+				<div id="expanddiv">
+				<?php foreach($_['settingsnavigation'] as $entry):?>
+					<li><a style="background-image:url(<?php echo $entry['icon']; ?>)" href="<?php echo $entry['href']; ?>" title="" <?php if( $entry["active"] ): ?> class="active"<?php endif; ?>><?php echo $entry['name'] ?></a></li>
+				<?php endforeach; ?>
+				</div>
+			</ul>
+		</div></nav>
 
-			<div id="content">
-				<?php echo $_['content']; ?>
-			</div>
+		<div id="content">
+			<?php echo $_['content']; ?>
 		</div>
 	</body>
 </html>

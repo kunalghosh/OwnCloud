@@ -207,7 +207,7 @@ class OC_OCS {
         $identifieduser='';
       }
     }else{
-      if(!OC_USER::login($authuser,$authpw)){
+      if(!OC_User::login($authuser,$authpw)){
         if($forceuser){
           header('WWW-Authenticate: Basic realm="your valid user account or api key"');
           header('HTTP/1.0 401 Unauthorized');
@@ -377,7 +377,7 @@ class OC_OCS {
    */
   private static function personCheck($format,$login,$passwd) {
     if($login<>''){
-      if(OC_USER::login($login,$passwd)){
+      if(OC_User::login($login,$passwd)){
         $xml['person']['personid']=$login;
         echo(OC_OCS::generatexml($format,'ok',100,'',$xml,'person','check',2));
       }else{
@@ -402,33 +402,7 @@ class OC_OCS {
   private static function activityGet($format,$page,$pagesize) {
     $user=OC_OCS::checkpassword();
     
-	$query = OC_DB::prepare('select count(*) as co from *PREFIX*log');
-    $result = $query->execute();
-    $entry=$result->fetchRow();
-    $totalcount=$entry['co'];
-	
-	$query=OC_DB::prepare('select id,timestamp,user,type,message from *PREFIX*log order by timestamp desc limit ?,?');
-    $result = $query->execute(array(($page*$pagesize),$pagesize))->fetchAll();
-    
-    $itemscount=count($result);
-
-    $url='http://'.substr($_SERVER['HTTP_HOST'].$_SERVER['SCRIPT_NAME'],0,-11).'';
-    $xml=array();
-    foreach($result as $i=>$log) {
-      $xml[$i]['id']=$log['id'];
-      $xml[$i]['personid']=$log['user'];
-      $xml[$i]['firstname']=$log['user'];
-      $xml[$i]['lastname']='';
-      $xml[$i]['profilepage']=$url;
-
-      $pic=$url.'/img/owncloud-icon.png';
-      $xml[$i]['avatarpic']=$pic;
-
-      $xml[$i]['timestamp']=date('c',$log['timestamp']);
-      $xml[$i]['type']=1;
-      $xml[$i]['message']=OC_LOG::$TYPE[$log['type']].' '.strip_tags($log['message']);
-      $xml[$i]['link']=$url;
-    }
+	//TODO
 
     $txt=OC_OCS::generatexml($format,'ok',100,'',$xml,'activity','full',2,$totalcount,$pagesize);
     echo($txt);
@@ -463,7 +437,6 @@ class OC_OCS {
       $xml[$i]['key']=$log['key'];
       $xml[$i]['app']=$log['app'];
       $xml[$i]['value']=$log['value'];
-      $xml[$i]['timestamp']=$log['timestamp'];
     }
 
 
@@ -511,28 +484,26 @@ class OC_OCS {
 	* @param bool $like use LIKE instead of = when comparing keys
 	* @return array
 	*/
-	public static function getData($user,$app="",$key="",$like=false) {
-		$key="$user::$key";//ugly hack for the sake of keeping database scheme compatibiliy, needs to be replaced with a seperate user field the next time we break db compatibiliy
-		$compareFunction=($like)?'LIKE':'=';
-		
+	public static function getData($user,$app="",$key="") {
 		if($app){
-			if (!trim($key)) {
-				$query = OC_DB::prepare('select app, `key`,value,`timestamp` from *PREFIX*privatedata where app=? order by `timestamp` desc');
-				$result=$query->execute(array($app))->fetchAll();
-			} else {
-				$query = OC_DB::prepare("select app, `key`,value,`timestamp` from *PREFIX*privatedata where app=? and `key` $compareFunction ? order by `timestamp` desc");
-				$result=$query->execute(array($app,$key))->fetchAll();
-			}
+			$apps=array($app);
 		}else{
-			if (!trim($key)) {
-				$query = OC_DB::prepare('select app, `key`,value,`timestamp` from *PREFIX*privatedata order by `timestamp` desc');
-				$result=$query->execute()->fetchAll();
-			} else {
-				$query = OC_DB::prepare("select app, `key`,value,`timestamp` from *PREFIX*privatedata where `key` $compareFunction ? order by `timestamp` desc");
-				$result=$query->execute(array($key))->fetchAll();
+			$apps=OC_Preferences::getApps($user);
+		}
+		if($key){
+			$keys=array($key);
+		}else{
+			foreach($apps as $app){
+				$keys=OC_Preferences::getKeys($user,$app);
 			}
 		}
-		$result=self::trimKeys($result,$user);
+		$result=array();
+		foreach($apps as $app){
+			foreach($keys as $key){
+				$value=OC_Preferences::getValue($user,$app,$key);
+				$result[]=array('app'=>$app,'key'=>$key,'value'=>$value);
+			}
+		}
 		return $result;
 	}
 
@@ -545,25 +516,7 @@ class OC_OCS {
 	* @return bool
 	*/
 	public static function setData($user, $app, $key, $value) {
-		$key="$user::$key";//ugly hack for the sake of keeping database scheme compatibiliy
-		//TODO: locking tables, fancy stuff, error checking/handling
-		$query=OC_DB::prepare("select count(*) as co from *PREFIX*privatedata where `key` = ? and app = ?");
-		$result=$query->execute(array($key,$app))->fetchAll();
-		$totalcount=$result[0]['co'];
-		if ($totalcount != 0) {
-			$query=OC_DB::prepare("update *PREFIX*privatedata set value=?, `timestamp` = now() where `key` = ? and app = ?");
-			
-		} else {
-			$result = OC_DB::prepare("insert into *PREFIX*privatedata(value, `key`, app, `timestamp`) values(?, ?, ?, now())");
-		}
-		$result = $query->execute(array($value,$key,$app));
-		if (PEAR::isError($result)){
-			$entry='DB Error: "'.$result->getMessage().'"<br />';
-			error_log($entry);
-			return false;
-		}else{
-			return true;
-		}
+		return OC_Preferences::setValue($user,$app,$key,$value);
 	}
 
 	/**
@@ -574,27 +527,6 @@ class OC_OCS {
 	* @return string xml/json
 	*/
 	public static function deleteData($user, $app, $key) {
-		$key="$user::$key";//ugly hack for the sake of keeping database scheme compatibiliy
-		//TODO: prepared statements, locking tables, fancy stuff, error checking/handling
-		$query=OC_DB::prepare("delete from *PREFIX*privatedata where `key` = ? and app = ?");
-		$result = $query->execute(array($key,$app));
-		if (PEAR::isError($result)){
-			$entry='DB Error: "'.$result->getMessage().'"<br />';
-			error_log($entry);
-			return false;
-		}else{
-			return true;
-		}
-	}
-
-	//trim username prefixes from $array
-	private static function trimKeys($array,$user){
-		$length=strlen("$user::");
-		foreach($array as &$item){
-			$item['key']=substr($item['key'],$length);
-		}
-		return $array;
+		return OC_Preferences::deleteKey($user,$app,$key);
 	}
 }
-
-?>

@@ -26,7 +26,7 @@
  * database.
  */
 
-class OC_OCSCLIENT{
+class OC_OCSClient{
 
 	/**
 	 * @brief Get all the categories from the OCS server
@@ -80,15 +80,16 @@ class OC_OCSCLIENT{
 		$tmp=$data->data->content;
 		for($i = 0; $i < count($tmp); $i++) {
 			$app=array();
-			$app['id']=$tmp[$i]->id;
-			$app['name']=$tmp[$i]->name;
-			$app['type']=$tmp[$i]->typeid;
-			$app['typename']=$tmp[$i]->typename;
-			$app['personid']=$tmp[$i]->personid;
-			$app['detailpage']=$tmp[$i]->detailpage;
-			$app['preview']=$tmp[$i]->smallpreviewpic1;
+			$app['id']=(string)$tmp[$i]->id;
+			$app['name']=(string)$tmp[$i]->name;
+			$app['type']=(string)$tmp[$i]->typeid;
+			$app['typename']=(string)$tmp[$i]->typename;
+			$app['personid']=(string)$tmp[$i]->personid;
+			$app['license']=(string)$tmp[$i]->license;
+			$app['detailpage']=(string)$tmp[$i]->detailpage;
+			$app['preview']=(string)$tmp[$i]->smallpreviewpic1;
 			$app['changed']=strtotime($tmp[$i]->changed);
-			$app['description']=$tmp[$i]->description;
+			$app['description']=(string)$tmp[$i]->description;
 	
 			$apps[]=$app;
 		} 
@@ -134,8 +135,10 @@ class OC_OCSCLIENT{
 	 *
 	 * This function returns a list of all the knowledgebase entries from the OCS server
 	 */
-	public static function getKnownledgebaseEntries(){
-		$url='http://api.apps.owncloud.com/v1/knowledgebase/data?type=150&page=0&pagesize=10';
+	public static function getKnownledgebaseEntries($page,$pagesize){	
+		$p= (int) $page;
+		$s= (int) $pagesize;
+		$url='http://api.apps.owncloud.com/v1/knowledgebase/data?type=150&page='.$p.'&pagesize='.$s;
 
 		$kbe=array();
 		$xml=@file_get_contents($url);
@@ -152,12 +155,14 @@ class OC_OCSCLIENT{
 			$kb['description']=$tmp[$i]->description;
 			$kb['answer']=$tmp[$i]->answer;
 			$kb['preview1']=$tmp[$i]->smallpreviewpic1;
+			$kb['detailpage']=$tmp[$i]->detailpage;
 			$kbe[]=$kb;
 		}
-		return $kbe;
+		$total=$data->meta->totalitems;
+		$kbe['totalitems']=$total;
+                return $kbe;
 	}
 
 
 
 }
-?>

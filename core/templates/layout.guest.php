@@ -9,7 +9,7 @@
 		<?php endforeach; ?>
 		<script type="text/javascript">
 			var oc_webroot = '<?php global $WEBROOT; echo $WEBROOT; ?>';
-		// </script>
+		</script>
 		<?php foreach($_['jsfiles'] as $jsfile): ?>
 			<script type="text/javascript" src="<?php echo $jsfile; ?>"></script>
 		<?php endforeach; ?>
@@ -20,16 +20,18 @@
 				foreach($header['attributes'] as $name=>$value){
 					echo "$name='$value' ";
 				};
-				echo '>';
-				echo $header['text'];
-				echo '</'.$header['tag'].'>';
+				echo '/>';
 			?>
-			<script type="text/javascript" src="<?php echo $jsfile; ?>"></script>
 		<?php endforeach; ?>
 	</head>
 
 	<body id="body-login">
-		<?php echo $_['content']; ?>
-		<p class="info"><?php echo $l->t( '<a href="http://owncloud.org/">ownCloud</a> is a personal cloud which runs on your own server.</p>' ); ?>
+		<div id="login">
+			<header><div id="header">
+				<img src="<?php echo image_path('', 'owncloud-logo-medium-white.png'); ?>" alt="ownCloud" />
+			</div></header>
+			<?php echo $_['content']; ?>
+		</div>
+		<footer><p class="info"><a href="http://owncloud.org/">ownCloud</a> <?php echo $l->t( 'gives you freedom and control over your own data' ); ?></p></footer>
 	</body>
 </html>

@@ -12,9 +12,6 @@
  * @version 0.9
  */
 
-require( 'template.php' );
-
-
 /**
  * Set a constant to indicate that phpMyID is running
  */
@@ -208,8 +205,7 @@ function authorize_mode () {
 
 	$profile['idp_url']=$IDENTITY;
 	if (isset($_SERVER['PHP_AUTH_USER']) && $profile['authorized'] === false && $_SERVER['PHP_AUTH_USER']==$USERNAME) {
-		if (OC_USER::checkPassword($USERNAME, $_SERVER['PHP_AUTH_PW'])) {// successful login!
-			error_log('success');
+		if (OC_User::checkPassword($USERNAME, $_SERVER['PHP_AUTH_PW'])) {// successful login!
 			// return to the refresh url if they get in
 			$_SESSION['openid_auth']=true;
 			$_SESSION['openid_user']=$USERNAME;
@@ -330,27 +326,27 @@ function checkid ( $wait ) {
 	user_session();
 
 	// Get the options, use defaults as necessary
-	$return_to = @strlen($_REQUEST['openid_return_to'])
+	$return_to = isset($_REQUEST['openid_return_to'])
 		? $_REQUEST['openid_return_to']
-		: error_400('Missing return1_to');
+		: error_400('Missing return_to');
 
-	$identity = @strlen($_REQUEST['openid_identity'])
+	$identity = isset($_REQUEST['openid_identity'])
 			? $_REQUEST['openid_identity']
 			: error_get($return_to, 'Missing identity');
 
-	$assoc_handle = @strlen($_REQUEST['openid_assoc_handle'])
-			? $_REQUEST['openid_assoc.handle']
+	$assoc_handle = isset($_REQUEST['openid_assoc_handle'])
+			? $_REQUEST['openid_assoc_handle']
 			: null;
 
-	$trust_root = @strlen($_REQUEST['openid_trust_root'])
+	$trust_root = isset($_REQUEST['openid_trust_root'])
 			? $_REQUEST['openid_trust_root']
 			: $return_to;
 
-	$sreg_required = @strlen($_REQUEST['openid_sreg_required'])
+	$sreg_required = isset($_REQUEST['openid_sreg_required'])
 			? $_REQUEST['openid_sreg.required']
 			: '';
 
-	$sreg_optional = @strlen($_REQUEST['openid_sreg_optional'])
+	$sreg_optional = isset($_REQUEST['openid_sreg_optional'])
 			? $_REQUEST['openid_sreg.optional']
 			: '';
 
@@ -563,7 +559,7 @@ function logout_mode () {
  */
 function no_mode () {
 	global $USERNAME, $profile;
-	$tmpl = new OC_TEMPLATE( 'user_openid', 'nomode', 'guest' );
+	$tmpl = new OC_Template( 'user_openid', 'nomode', 'guest' );
 	if(substr($profile['req_url'],-1,1)!=='/'){//the identity should always end with a /
 		$profile['req_url'].='/';
 	}
@@ -1626,7 +1622,6 @@ $GLOBALS['port'] = ((isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == 'on' && $_
 		: ':' . $_SERVER['SERVER_PORT'];
 
 
-error_log($_SERVER['HTTP_HOST']);
 /**
  * Determine the HTTP request protocol
  * @name $proto
@@ -1651,15 +1646,15 @@ $profile['req_url'] = sprintf("%s://%s%s",
 // 		      $port,//host  already includes the path
 		      $_SERVER["REQUEST_URI"]);
 
-$fullId=urlencode('.php/'.$USERNAME);
-$incompleteId=urlencode('.php/');
+// $fullId='user.php/'.$USERNAME.'/';
+// $incompleteId='user.php/';
 
-if(!strpos($profile['req_url'],$fullId)){
-	$profile['req_url']=str_replace($incompleteId,$fullId,$profile['req_url']);
-}
+// if(!strpos($profile['req_url'],$fullId)){
+// 	$profile['req_url']=str_replace($incompleteId,$fullId,$profile['req_url']);
+// }
 
-error_log('inc id: '.$fullId);
-error_log('req url: '.$profile['req_url']);
+// error_log('inc id: '.$fullId);
+// error_log('req url: '.$profile['req_url']);
 
 // Set the default allowance for testing
 if (! array_key_exists('allow_test', $profile))

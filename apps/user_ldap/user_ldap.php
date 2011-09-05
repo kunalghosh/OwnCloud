@@ -21,9 +21,7 @@
  *
  */
 
-require_once('User/backend.php');
-
-class OC_USER_LDAP extends OC_USER_BACKEND {
+class OC_USER_LDAP extends OC_User_Backend {
 
 	protected $ds;
 	protected $configured = false;
@@ -37,12 +35,12 @@ class OC_USER_LDAP extends OC_USER_BACKEND {
 	protected $ldap_filter;
 
 	function __construct() {
-		$this->ldap_host = OC_APPCONFIG::getValue('user_ldap', 'ldap_host','');
-		$this->ldap_port = OC_APPCONFIG::getValue('user_ldap', 'ldap_port', OC_USER_BACKEND_LDAP_DEFAULT_PORT	);
-		$this->ldap_dn = OC_APPCONFIG::getValue('user_ldap', 'ldap_dn','');
-		$this->ldap_password = OC_APPCONFIG::getValue('user_ldap', 'ldap_password','');
-		$this->ldap_base = OC_APPCONFIG::getValue('user_ldap', 'ldap_base','');
-		$this->ldap_filter = OC_APPCONFIG::getValue('user_ldap', 'ldap_filter','');
+		$this->ldap_host = OC_Appconfig::getValue('user_ldap', 'ldap_host','');
+		$this->ldap_port = OC_Appconfig::getValue('user_ldap', 'ldap_port', OC_USER_BACKEND_LDAP_DEFAULT_PORT	);
+		$this->ldap_dn = OC_Appconfig::getValue('user_ldap', 'ldap_dn','');
+		$this->ldap_password = OC_Appconfig::getValue('user_ldap', 'ldap_password','');
+		$this->ldap_base = OC_Appconfig::getValue('user_ldap', 'ldap_base','');
+		$this->ldap_filter = OC_Appconfig::getValue('user_ldap', 'ldap_filter','');
 
 		if( !empty($this->ldap_host)
 			&& !empty($this->ldap_port)
@@ -65,6 +63,9 @@ class OC_USER_LDAP extends OC_USER_BACKEND {
 	private function getDs() {
 		if(!$this->ds) {
 			$this->ds = ldap_connect( $this->ldap_host, $this->ldap_port );
+			   if(ldap_set_option($this->ds, LDAP_OPT_PROTOCOL_VERSION, 3))
+				 if(ldap_set_option($this->ds, LDAP_OPT_REFERRALS, 0))
+					  ldap_start_tls($this->ds);
 		}
 
 		// login
@@ -97,18 +98,20 @@ class OC_USER_LDAP extends OC_USER_BACKEND {
 		return $entries[0]["dn"];
 	}
 	public function checkPassword( $uid, $password ) {
-		if(!self::$configured){
+		if(!$this->configured){
 			return false;
 		}
 		$dn = $this->getDn( $uid );
 		if( !$dn )
 			return false;
 
-		return @ldap_bind( $this->getDs(), $dn, $password );
+		if (!@ldap_bind( $this->getDs(), $dn, $password ))
+			return false;
+		return $uid;
 	}
 
 	public function userExists( $uid ) {
-		if(!self::$configured){
+		if(!$this->configured){
 			return false;
 		}
 		$dn = $this->getDn($uid);

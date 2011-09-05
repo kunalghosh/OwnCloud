@@ -3,35 +3,24 @@
 // Init owncloud
 require_once('../../lib/base.php');
 
-$l=new OC_L10N('settings');
-
 // We send json data
 header( "Content-Type: application/jsonrequest" );
 
+$username = isset($_POST["username"]) ? $_POST["username"] : OC_User::getUser();
+$password = $_POST["password"];
+
 // Check if we are a user
-if( !OC_USER::isLoggedIn()){
-	echo json_encode( array( "status" => "error", "data" => array( "message" => $l->t( "Authentication error" ) )));
+if( !OC_User::isLoggedIn() || (!OC_Group::inGroup( OC_User::getUser(), 'admin' )&& $username!=OC_User::getUser())) {
+	echo json_encode( array( "status" => "error", "data" => array( "message" => "Authentication error" )));
 	exit();
 }
 
-// Get data
-if( !isset( $_POST["password"] ) && !isset( $_POST["oldpassword"] )){
-	echo json_encode( array( "status" => "error", "data" => array( "message" => $l->t( "You have to enter the old and the new password!" ) )));
-	exit();
-}
-
-// Check if the old password is correct
-if( !OC_USER::checkPassword( $_SESSION["user_id"], $_POST["oldpassword"] )){
-	echo json_encode( array( "status" => "error", "data" => array( "message" => $l->t("Your old password is wrong!") )));
-	exit();
-}
-
-// Change password
-if( OC_USER::setPassword( $_SESSION["user_id"], $_POST["password"] )){
-	echo json_encode( array( "status" => "success", "data" => array( "message" => $l->t("Password changed") )));
+// Return Success story
+if( OC_User::setPassword( $username, $password )){
+	echo json_encode( array( "status" => "success", "data" => array( "username" => $username )));
 }
 else{
-	echo json_encode( array( "status" => "error", "data" => array( "message" => $l->t("Unable to change password") )));
+	echo json_encode( array( "status" => "error", "data" => array( "message" => "Unable to change password" )));
 }
 
 ?>

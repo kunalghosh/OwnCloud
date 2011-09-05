@@ -1,0 +1,23 @@
+<?php $TRANSLATIONS = array(
+"Users" => "Användare",
+"Apps" => "Program",
+"Help" => "Hjälp",
+"Cloud not found" => "Hittade inget moln",
+"Create an <strong>admin account</strong>" => "Skapa ett <strong>administratörskonto</strong>",
+"Username" => "Användarnamn",
+"Password" => "Lösenord",
+"Configure the database" => "Konfigurera databasen",
+"will be used" => "kommer att användas",
+"Database user" => "Databas-användare",
+"Database password" => "Databas-lösenord",
+"Database name" => "Databasnamn",
+"Advanced" => "Avancerat",
+"Data folder" => "Datamapp",
+"Finish setup" => "Avsluta installation",
+"Settings" => "Inställningar",
+"remember" => "kom ihåg",
+"You are logged out." => "Du är utloggad",
+"Login failed!" => "Inloggning misslyckades!",
+"prev" => "föregående",
+"next" => "nästa"
+);

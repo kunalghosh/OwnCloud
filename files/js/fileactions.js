@@ -1,11 +1,14 @@
 FileActions={
 	actions:{},
 	defaults:{},
-	register:function(mime,name,action){
+	icons:{},
+	currentFile:null,
+	register:function(mime,name,icon,action){
 		if(!FileActions.actions[mime]){
 			FileActions.actions[mime]={};
 		}
 		FileActions.actions[mime][name]=action;
+		FileActions.icons[name]=icon;
 	},
 	setDefault:function(mime,name){
 		FileActions.defaults[mime]=name;
@@ -49,55 +52,93 @@ FileActions={
 		return actions[name];
 	},
 	display:function(parent){
-		$('#file_menu ul').empty();
-		parent.append($('#file_menu'));
+		FileActions.currentFile=parent;
+		$('.action').remove();
 		var actions=FileActions.get(FileActions.getCurrentMimeType(),FileActions.getCurrentType());
-		for(name in actions){
-			var html='<li><a href="" alt="'+name+'">'+name+'</a></li>';
-			var element=$(html);
-			element.data('action',name);
-			element.click(function(event){
-				event.preventDefault();
-				$('#file_menu').slideToggle(250);
-				var action=actions[$(this).data('action')];
-				$('#file_menu ul').empty();
-				action(FileActions.getCurrentFile());
-			});
-			$('#file_menu>ul').append(element);
+		var file=FileActions.getCurrentFile();
+		if($('tr[data-file="'+file+'"]').data('renaming')){
+			return;
 		}
-		$('#file_menu').slideToggle(250);
+		var defaultAction=FileActions.getDefault(FileActions.getCurrentMimeType(),FileActions.getCurrentType());
+		for(name in actions){
+			if((name=='Download' || actions[name]!=defaultAction) && name!='Delete'){
+				var img=FileActions.icons[name];
+				if(img.call){
+					img=img(file);
+				}
+				var html='<a href="#" title="'+name+'" class="action" />';
+				var element=$(html);
+				if(img){
+					element.append($('<img src="'+img+'"/>'));
+				}
+				element.data('action',name);
+				element.click(function(event){
+					event.stopPropagation();
+					event.preventDefault();
+					var action=actions[$(this).data('action')];
+					var currentFile=FileActions.getCurrentFile();
+					FileActions.hide();
+					action(currentFile);
+				});
+				parent.children('a.name').append(element);
+			}
+		}
+		if(actions['Delete']){
+			var img=FileActions.icons['Delete'];
+			if(img.call){
+				img=img(file);
+			}
+			var html='<a href="#" title="Delete" class="action" />';
+			var element=$(html);
+			if(img){
+				element.append($('<img src="'+img+'"/>'));
+			}
+			element.data('action','Delete');
+			element.click(function(event){
+				event.stopPropagation();
+				event.preventDefault();
+				var action=actions[$(this).data('action')];
+				var currentFile=FileActions.getCurrentFile();
+				FileActions.hide();
+				action(currentFile);
+			});
+			parent.parent().children().last().append(element);
+		}
+		$('.action').hide();
+		$('.action').fadeIn(200);
 		return false;
 	},
+	hide:function(){
+		$('.action').fadeOut(200,function(){
+			$(this).remove();
+		});
+	},
 	getCurrentFile:function(){
-		return $('#file_menu').parents('tr:first').attr('data-file');
+		return FileActions.currentFile.parent().attr('data-file');
 	},
 	getCurrentMimeType:function(){
-		return $('#file_menu').parents('tr:first').attr('data-mime');
+		return FileActions.currentFile.parent().attr('data-mime');
 	},
 	getCurrentType:function(){
-		return $('#file_menu').parents('tr:first').attr('data-type');
+		return FileActions.currentFile.parent().attr('data-type');
 	}
 }
 
-FileActions.register('all','Download',function(filename){
+FileActions.register('all','Download',function(){return OC.imagePath('core','actions/download')},function(filename){
 	window.location='ajax/download.php?files='+filename+'&dir='+$('#dir').val();
 });
 
-FileActions.register('all','Delete',function(filename){
-	$.ajax({
-		url: 'ajax/delete.php',
-		data: "dir="+$('#dir').val()+"&file="+filename,
-		complete: function(data){
-			boolOperationFinished(data, function(){
-				FileList.remove(filename);
-			});
-		}
-	});
+FileActions.register('all','Delete',function(){return OC.imagePath('core','actions/delete')},function(filename){
+	FileList.do_delete(filename);
 });
 
-FileActions.setDefault('all','Download');
+FileActions.register('all','Rename',function(){return OC.imagePath('core','actions/rename')},function(filename){
+	FileList.rename(filename);
+});
 
-FileActions.register('dir','Open',function(filename){
+//FileActions.setDefault('all','Download');
+
+FileActions.register('dir','Open','',function(filename){
 	window.location='index.php?dir='+$('#dir').val()+'/'+filename;
 });
 

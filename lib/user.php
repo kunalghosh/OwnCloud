@@ -20,10 +20,6 @@
  *
  */
 
-if( !OC_CONFIG::getValue( "installed", false )){
-	$_SESSION['user_id'] = '';
-}
-
 /**
  * This class provides all methods for user management.
  *
@@ -38,7 +34,7 @@ if( !OC_CONFIG::getValue( "installed", false )){
  *   post_login(uid)
  *   logout()
  */
-class OC_USER {
+class OC_User {
 	// The backend used for user management
 	private static $_usedBackends = array();
 
@@ -95,8 +91,7 @@ class OC_USER {
 			case 'database':
 			case 'mysql':
 			case 'sqlite':
-				require_once('User/database.php');
-				self::$_usedBackends[$backend] = new OC_USER_DATABASE();
+				self::$_usedBackends[$backend] = new OC_User_Database();
 				break;
 			default:
 				$className = 'OC_USER_' . strToUpper($backend);
@@ -113,7 +108,7 @@ class OC_USER {
 	 * @param $password The password of the new user
 	 * @returns true/false
 	 *
-	 * Creates a new user. Basic checking of username is done in OC_USER
+	 * Creates a new user. Basic checking of username is done in OC_User
 	 * itself, not in its subclasses.
 	 *
 	 * Allowed characters in the username are: "a-z", "A-Z", "0-9" and "_.@-"
@@ -135,7 +130,7 @@ class OC_USER {
 
 
 		$run = true;
-		OC_HOOK::emit( "OC_USER", "pre_createUser", array( "run" => &$run, "uid" => $uid, "password" => $password ));
+		OC_Hook::emit( "OC_User", "pre_createUser", array( "run" => &$run, "uid" => $uid, "password" => $password ));
 
 		if( $run ){
 			//create the user in the first backend that supports creating users
@@ -144,7 +139,7 @@ class OC_USER {
 					continue;
 
 				$backend->createUser($uid,$password);
-				OC_HOOK::emit( "OC_USER", "post_createUser", array( "uid" => $uid, "password" => $password ));
+				OC_Hook::emit( "OC_User", "post_createUser", array( "uid" => $uid, "password" => $password ));
 
 				return true;
 			}
@@ -161,7 +156,7 @@ class OC_USER {
 	 */
 	public static function deleteUser( $uid ){
 		$run = true;
-		OC_HOOK::emit( "OC_USER", "pre_deleteUser", array( "run" => &$run, "uid" => $uid ));
+		OC_Hook::emit( "OC_User", "pre_deleteUser", array( "run" => &$run, "uid" => $uid ));
 
 		if( $run ){
 			//delete the user from all backends
@@ -171,12 +166,12 @@ class OC_USER {
 				}
 			}
 			// We have to delete the user from all groups
-			foreach( OC_GROUP::getUserGroups( $uid ) as $i ){
-				OC_GROUP::removeFromGroup( $uid, $i );
+			foreach( OC_Group::getUserGroups( $uid ) as $i ){
+				OC_Group::removeFromGroup( $uid, $i );
 			}
 
 			// Emit and exit
-			OC_HOOK::emit( "OC_USER", "post_deleteUser", array( "uid" => $uid ));
+			OC_Hook::emit( "OC_User", "post_deleteUser", array( "uid" => $uid ));
 			return true;
 		}
 		else{
@@ -194,15 +189,19 @@ class OC_USER {
 	 */
 	public static function login( $uid, $password ){
 		$run = true;
-		OC_HOOK::emit( "OC_USER", "pre_login", array( "run" => &$run, "uid" => $uid ));
+		OC_Hook::emit( "OC_User", "pre_login", array( "run" => &$run, "uid" => $uid ));
 
-		if( $run && self::checkPassword( $uid, $password )){
-			$_SESSION['user_id'] = $uid;
-			OC_LOG::add( "core", $_SESSION['user_id'], "login" );
-			OC_HOOK::emit( "OC_USER", "post_login", array( "uid" => $uid ));
-			return true;
-		}
-		else{
+		if( $run ){
+			$uid=self::checkPassword( $uid, $password );
+			if($uid){
+				$_SESSION['user_id'] = $uid;
+				OC_Crypt::init($uid,$password);
+				OC_Hook::emit( "OC_User", "post_login", array( "uid" => $uid ));
+				return true;
+			}else{
+				return false;
+			}
+		}else{
 			return false;
 		}
 	}
@@ -214,8 +213,7 @@ class OC_USER {
 	 * Logout, destroys session
 	 */
 	public static function logout(){
-		OC_HOOK::emit( "OC_USER", "logout", array());
-		OC_LOG::add( "core", $_SESSION['user_id'], "logout" );
+		OC_Hook::emit( "OC_User", "logout", array());
 		$_SESSION['user_id'] = false;
 		return true;
 	}
@@ -268,7 +266,7 @@ class OC_USER {
 	 */
 	public static function setPassword( $uid, $password ){
 		$run = true;
-		OC_HOOK::emit( "OC_USER", "pre_setPassword", array( "run" => &$run, "uid" => $uid, "password" => $password ));
+		OC_Hook::emit( "OC_User", "pre_setPassword", array( "run" => &$run, "uid" => $uid, "password" => $password ));
 
 		if( $run ){
 			foreach(self::$_usedBackends as $backend){
@@ -278,7 +276,7 @@ class OC_USER {
 					}
 				}
 			}
-			OC_HOOK::emit( "OC_USER", "post_setPassword", array( "uid" => $uid, "password" => $password ));
+			OC_Hook::emit( "OC_User", "post_setPassword", array( "uid" => $uid, "password" => $password ));
 			return true;
 		}
 		else{
@@ -298,8 +296,8 @@ class OC_USER {
 		foreach(self::$_usedBackends as $backend){
 			if($backend->implementsActions(OC_USER_BACKEND_CHECK_PASSWORD)){
 				$result=$backend->checkPassword( $uid, $password );
-				if($result===true){
-					return true;
+				if($result){
+					return $result;
 				}
 			}
 		}
@@ -336,5 +334,21 @@ class OC_USER {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * @brief Set cookie value to use in next page load
+	 * @param string $username username to be set
+	 */
+	public static function setUsernameInCookie($username){
+		setcookie("username", $username, mktime().time()+60*60*24*15);
+	}
+
+	/**
+	 * @brief Remove cookie for "remember username"
+	 */
+	public static function unsetUsernameInCookie(){
+		unset($_COOKIE["username"]);
+		setcookie("username", NULL, -1);
 	}
 }

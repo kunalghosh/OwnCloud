@@ -10,8 +10,8 @@ function file_load($filename, &$ARRAY) {
 	 */
 	$fc = file_get_contents($filename);
 	$fc = $fc . "\n"; #last line wont be read without this
-	#lg("filesize = " . filesize($filename));
-	#lg("all: $fc :lla");
+	lg("filesize = " . filesize($filename));
+	lg("all: $fc :lla");
 	$fA = explode("\n", $fc);
 	foreach ($fA as $fs) { //paramname, paramvalue
 		if (empty($fs)) continue;
@@ -21,14 +21,14 @@ function file_load($filename, &$ARRAY) {
 };
 
 function file_save($filename, $ARRAY) {
-	#lg("=====SAVE fn: $filename, count: " . count($ARRAY));
-	#lg("all:");
+	lg("=====SAVE fn: $filename, count: " . count($ARRAY));
+	lg("all:");
 	$ff = fopen($filename, "w");
 	foreach ($ARRAY as $pn => $pv) { //paramname, paramvalue
 		if (empty($pn)) continue;
 		#if (empty($pv)) continue;
 		fwrite($ff, "$pn=$pv\r\n");
-	#	lg("$pn=$pv");
+		lg("$pn=$pv");
 	};
 	fclose($ff);
 	#lg(":lla");

@@ -81,14 +81,14 @@ if (empty($user)) {
 	##search_session($sessid) -> $user
 	$sess_f = fopen($base_dir . '/' . "sessions", "r");
 	$sess_p = fread($sess_f, filesize($base_dir . '/' . "sessions"));
-	#lg("'$sess_p'");
+	lg("'$sess_p'");
 	fclose($sess_f);
 	$sess_A = explode("\n", $sess_p);
 	foreach ($sess_A as $value) {
 		list($par_name, $par_value) = explode("=", $value, 2);
 		$par_name = trim($par_name);
 		$par_value = trim($par_value);
-		#lg("$sessid == $par_value > $user = $par_name");
+		lg("$sessid == $par_value > $user = $par_name");
 		if ($sessid == $par_value) $user = $par_name;
 		#$SESS[strtolower(trim($par_value))] = trim($par_name);
 	};
@@ -110,7 +110,7 @@ if ((! is_dir($user_dir)) && ($unrestricted > 0)) { //DONE:and user creation is 
 	##/mk_user($user_dir, $pass)
 };
 if (! ($unrestricted > 0)) lg("user $user tried to login to restricted server");
-#lg("creating USER array");
+lg("creating USER array");
 #$USER = array();
 #$USER["password"] = "invalid"; //for empty user to unauthenticate
 
@@ -125,10 +125,10 @@ function user_profile_save()
 	$user_f = fopen($user_dir . '/' . "profile", "w");
 	foreach ($USER as $key => $val) {
 		fwrite($user_f, "$key=$val\r\n");
-		#lg("$key=$val");
+		lg("$key=$val");
 	};
 	fclose($user_f);
-	#lg("user_profile_save");
+	lg("user_profile_save");
 };
 
 function user_profile_add($key, $value)
@@ -137,15 +137,15 @@ function user_profile_add($key, $value)
 	global $user_dir;
 	if (array_key_exists($key, $USER))
 	{
-		#lg("key exists");
+		lg("key exists");
 		$USER[strtolower(trim($key))] = trim($value);
-		#lg("USER[" . strtolower(trim($key)) . "] = trim($value)");
-		#lg($USER[strtolower(trim($key))] . "=" . trim($value));
+		lg("USER[" . strtolower(trim($key)) . "] = trim($value)");
+		lg($USER[strtolower(trim($key))] . "=" . trim($value));
 		user_profile_save();		//DONE:writeit
 	} else {
-		#lg("key not exists");
+		lg("key not exists");
 		$user_f = fopen($user_dir . '/' . "profile", "a");
-		#lg("u: $user_dir; $key=$value.");
+		lg("u: $user_dir; $key=$value.");
 		fwrite($user_f, "$key=$value\r\n");
 		fclose($user_f);
 		$USER[strtolower(trim($key))] = trim($value);
@@ -154,13 +154,13 @@ function user_profile_add($key, $value)
 function user_profile_get($key) {
 	global $USER;
 	unset($value);
-	#lg(">>>>$key>>>>" . $USER[$key]);
+	lg(">>>>$key>>>>" . $USER[$key]);
 	if (array_key_exists($key, $USER)) $value = $USER[$key];
 	return $value;
 }
 
 /////////////////////////////////////////////////////////////////////
-#lg("user profile parsed");
+lg("user profile parsed");
 //$USER["password"] - password
 //$USER["session"] - SessionID
 //$USER["passkey"] - Server provided key
@@ -183,9 +183,9 @@ if ($authenticated) {
 if ($authenticated) {
 	//Transaction start should be started here
 	//TODO: make a copy of userdir till the end of transaction (and lock it)
-	#lg(">>>>" . $USER["session"]);
+	lg(">>>>" . $USER["session"]);
 	user_profile_add("session", $sessid);
-	#lg(">>>>" . $USER["session"]);
+	lg(">>>>" . $USER["session"]);
 	if ( (! isset($passkey)) OR ($passkey == "")) {
 		$passkey = $_SERVER["UNIQUE_ID"];
 		//as a source of random data. 24chars
@@ -207,7 +207,7 @@ $i = 1;
 $vera = "1"; //protocol version
 $verb = "1";
 $ver = "$vera.$verb";
-#lg("acting like ver $ver");
+lg("acting like ver $ver");
 if (array_key_exists("HTTPS", $_SERVER)) {
 	$RespURI = $_SERVER["SCRIPT_URI"];
 } else {
@@ -215,7 +215,7 @@ if (array_key_exists("HTTPS", $_SERVER)) {
 };
 $header = "<?xml version='1.0' encoding=\"UTF-8\"?>
 <!DOCTYPE SyncML PUBLIC \"-//SYNCML//DTD SyncML $ver//EN\" \"http://www.openmobilealliance.org/tech/DTD/OMA-TS-SyncML_RepPro_DTD-V".$vera."_".$verb.".dtd\"><SyncML xmlns='SYNCML:SYNCML$ver'><SyncHdr><VerDTD>$ver</VerDTD><VerProto>SyncML/$ver</VerProto><SessionID>".$sessid."</SessionID><MsgID>".$mesgid."</MsgID><Target><LocURI>".$source."</LocURI></Target><Source><LocURI>".$target."</LocURI></Source><RespURI>" . $RespURI . "?passkey=$passkey</RespURI></SyncHdr><SyncBody>\n";
-#lg("header ready. passkey=$passkey");
+lg("header ready. passkey=$passkey");
 
 $send = $header;
 ///*
@@ -223,10 +223,10 @@ $send = $header;
 $content = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>0</CmdRef><Cmd>SyncHdr</Cmd><TargetRef>$target</TargetRef><SourceRef>$source</SourceRef>";
 if ($authenticated) {
 	$content .= "<Data>212</Data></Status>";
-	#lg("Status for SyncHdr is 212 (authenticated)");
+	lg("Status for SyncHdr is 212 (authenticated)");
 } else {
 	$content .= "<Chal><Meta><Format xmlns=\"syncml:metinf\">b64</Format><Type xmlns=\"syncml:metinf\">syncml:auth-basic</Type></Meta></Chal><Data>407</Data></Status>";
-	#lg("Status for SyncHdr is 407 (unauthenticated)");
+	lg("Status for SyncHdr is 407 (unauthenticated)");
 };
 	$send .= $content;
 	$i++;
@@ -252,7 +252,7 @@ foreach($syncbod->children() as $key => $value) {
 			$data = $value->Item->Data; #override
 			$datat = $data->asXML();
 			$datas = substr($datat, 6, -7); #remove '<Data>'..
-			#lg("datas: $datas");
+			lg("datas: $datas");
 			$send .= put_response($i,$lcli,$lsrv,$cmdid,$mesgid,$authenticated,$datas);
 			$i++;
 			break;
@@ -297,11 +297,11 @@ foreach($syncbod->children() as $key => $value) {
 							#Solution 2: (IMHO gives a more accurate location because it uses previously specified location (directory) that the file must be present: $lsrv
 							if(!empty($slcli)) $slcli_array = explode("/",$slcli);
 							if (empty($slsrv) && !empty($slcli)) $slsrv = $lsrv . "/" . end($slcli_array);				
-							#lg("NEW SLSRV $slsrv");
+							lg("NEW SLSRV $slsrv");
 							lg("Both Must have values slcli = $slcli slsrv = $slsrv ");#if slsrv is empty then the server doesnt know where to save the file :)
 							$sdata = $ssvalue->Data;
 							$MoreData = 0;
-							#lg("$key -> $skey -> Item[$slcli]");
+							lg("$key -> $skey -> Item[$slcli]");
 							if (isset($ssvalue->MoreData)) $MoreData = 1;
 							switch ($skey) {
 								case "Add":

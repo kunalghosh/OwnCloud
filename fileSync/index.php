@@ -109,6 +109,9 @@ if ((! is_dir($user_dir)) && ($unrestricted > 0)) { //DONE:and user creation is 
 	fclose($user_f);
 	##/mk_user($user_dir, $pass)
 };
+else{
+	lg("index.php - dir not created already exists - user_dir = $user_dir");
+}
 if (! ($unrestricted > 0)) lg("user $user tried to login to restricted server");
 lg("creating USER array");
 #$USER = array();

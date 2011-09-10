@@ -150,7 +150,16 @@ return true;
 
 function exists_item($s_dir,$item,$source) { #external
 $realfn = get_mapping($s_dir,$item,$source);
-if ($realfn === false) return false;
+if ($realfn === false){
+	lg("EXISTS_ITEM in files.php returned false for s_dir = $s_dir item = $item source = $source");
+	return false;
+}
+if ( ! is_dir($s_dir)){
+#check if the directory exists, if not return that
+#the item doesn't exist.
+	lg("EXISTS_ITEM in files.php returned false for s_dir = $s_dir item = $item source = $source");
+	return false;	
+}
 return file_exists($s_dir . "/" . $realfn);
 #return bool;
 };

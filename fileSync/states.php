@@ -16,7 +16,8 @@ function file_load($filename, &$ARRAY) {
 	foreach ($fA as $fs) { //paramname, paramvalue
 		if (empty($fs)) continue;
 		list($pn, $pv) = explode("=", $fs, 2);
-		$ARRAY[strtolower(trim($pn))] = trim($pv);
+		#$ARRAY[strtolower(trim($pn))] = trim($pv);
+		$ARRAY[trim($pn)] = trim($pv);#removed the strtolower() so that filenames after sync retain their case. 
 	};
 };
 

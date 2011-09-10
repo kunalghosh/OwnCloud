@@ -48,6 +48,7 @@ $STATE = Array();
 file_load($f_state, $STATE); #it can be faster to do append
 $STATE["hash_$item"] = md5($data);
 #lg("item: $item, md5: " . $STATE["hash_$item"]);
+lg("Function : write_item f_state = $fstate ");
 file_save($f_state, $STATE);
 #DONE:don't forget to do unset($STATE[$item]) in Map function;
 return true;
@@ -63,6 +64,7 @@ file_load($f_state, $STATE);
 $file = get_mapping($s_dir,$item,$source);
 unset($STATE["map_$file"]);
 unset($STATE["hash_$item"]);
+lg("Function : remove_item f_state = $fstate ");
 file_save($f_state, $STATE);
 unset($STATE);
 return true;
@@ -95,6 +97,7 @@ $STATE = Array();
 $f_state = $s_dir . "_" . $source . ".state";
 file_load($f_state, $STATE); #it can be faster to do append
 $STATE["map_$item"] = $item;
+lg("Function : make_mapping f_state = $fstate ");
 file_save($f_state, $STATE); # or a shared $STATE
 unset($STATE);
 return true;
@@ -105,6 +108,7 @@ $f_state = $s_dir . "_" . $source . ".state";
 $file = get_mapping($s_dir,$item,$source);
 file_load($f_state, $STATE); #it can be faster to do append
 unset($STATE["map_$file"]);
+lg("Function : remove_mapping f_state = $fstate ");
 file_save($f_state, $STATE); # or a shared $STATE
 unset($STATE);
 return true;
@@ -114,6 +118,7 @@ function remove_hash($s_dir,$item,$source) {#external, rare?
 $f_state = $s_dir . "_" . $source . ".state";
 file_load($f_state, $STATE); #it can be faster to do append
 unset($STATE["hash_$item"]);
+lg("Function : remove_hash f_state = $fstate ");
 file_save($f_state, $STATE); # or a shared $STATE
 unset($STATE);
 return true;
@@ -134,6 +139,7 @@ function write_hash($s_dir,$item,$source,$hash) {#external, weird
 $f_state = $s_dir . "_" . $source . ".state";
 file_load($f_state, $STATE); #it can be faster to do append
 $STATE["hash_" . $item] = $hash;
+lg("Function : write_hash f_state = $fstate ");
 file_save($f_state, $STATE); # or a shared $STATE
 unset($STATE);
 return true;
@@ -155,6 +161,7 @@ $STATE["map_$realfn"] = $itemt;
 $hash = $STATE["hash_$itemf"];
 unset($STATE["hash_$itemf"]);
 $STATE["hash_$itemt"] = $hash;
+lg("Function : rename_item f_state = $fstate ");
 file_save($f_state, $STATE);
 unset($STATE);
 return;
@@ -183,6 +190,7 @@ while (false !== ($file = readdir($SDir))) {
 		$fcnt++;
 	};
 };
+lg("Function : list_items f_state = $fstate ");
 file_save($f_state, $STATE);
 unset($STATE);
 lg("found $fcnt files, $umpd unmapped (new)");
@@ -200,6 +208,7 @@ foreach ($STATE as $item => $hash) {
 		$fcnt++;
 	};
 };
+lg("Function : list_hashes f_state = $fstate ");
 file_save($f_state, $STATE);
 unset($STATE);
 lg("found $fcnt hashes");

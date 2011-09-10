@@ -35,7 +35,9 @@ return write_item($s_dir,$item,$data,$source);
 function write_item($s_dir,$item,$data,$source) { #external
 #writes contents	
 #gen new filename realfn. use it
+lg("FUNCTION: WRITE_ITEM in files.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
+lg("FUNCTION: WRITE_ITEM IN files.php AFTER GET_MAPPING FILE=$file");
 if ($file === false) return false;
 #write contents
 $fitem = fopen($s_dir . "/" . $file, "w");

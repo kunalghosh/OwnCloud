@@ -231,6 +231,7 @@ function replace_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$sourc
 // replace_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$sdata);
 global $user_dir;	
 if ($auth) {
+	lg("FUNCTION: REPLACE_CONTACT in files.php item = $item");
 	$result = "200";
 	#$s_dir = $user_dir . "/" . $lsrv;
 	$s_dir = $user_dir;

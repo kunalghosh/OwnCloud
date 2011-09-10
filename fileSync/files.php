@@ -76,6 +76,7 @@ function get_mapping($s_dir,$item,$source) { #internal. should be..
 #unset($STATE); #what a hell? who made $STATE global?
 $STATE = Array();
 $f_state = $s_dir . "_" . $source . ".state";
+lg("GET_MAPPING f_state = $f_state");
 file_load($f_state, $STATE);
 $result = false;
 #map_$realfn=$item

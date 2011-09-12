@@ -7,7 +7,9 @@
 function get_item($s_dir,$item,$source) { #external
 #
 #get filename realfn. use it
+lg("FUNCTION: GET_ITEM in files.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
+lg("FUNCTION: GET_ITEM IN files.php AFTER GET_MAPPING FILE=$file");
 if ($file === false) return false;
 #read contents	
 $fitem = fopen($s_dir . "/" . $file, "r");
@@ -27,6 +29,7 @@ $temp2 = $s_dir . "/" . $temp2;
 lg("IMPLODED $temp2");
 if (! is_dir($temp2)) mkdir($temp2);
 #is item here really not exists? Is it for shure? There was some checks in add_response().. Yep, there is a check.
+lg("NEW_ITEM temp2 = $temp2 item = $item s_dir = $s_dir");
 make_mapping($s_dir,$item,$source);
 #make map: map_$realfn=$item
 return write_item($s_dir,$item,$data,$source);
@@ -63,7 +66,9 @@ if (! unlink($s_dir . "/" . $item)) lg("unable to remove $s_dir/$item");
 $STATE = Array();
 $f_state = $s_dir . "_" . $source . ".state";
 file_load($f_state, $STATE);
+lg("FUNCTION: REMOVE_ITEM in files.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
+lg("FUNCTION:  REMOVE_ITEM in files.php AFTER GET_MAPPING FILE=$file");
 unset($STATE["map_$file"]);
 unset($STATE["hash_$item"]);
 lg("Function : remove_item f_state = $fstate ");
@@ -108,7 +113,9 @@ return true;
 
 function remove_mapping($s_dir,$item,$source) {#external, rare?
 $f_state = $s_dir . "_" . $source . ".state";
+lg("FUNCTION: REMOVE_MAPPING in files.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
+lg("FUNCTION:  REMOVE_MAPPING in files.php AFTER GET_MAPPING FILE=$file");
 file_load($f_state, $STATE); #it can be faster to do append
 unset($STATE["map_$file"]);
 lg("Function : remove_mapping f_state = $fstate ");
@@ -149,7 +156,9 @@ return true;
 };
 
 function exists_item($s_dir,$item,$source) { #external
+lg("FUNCTION: EXISTS_ITEM in files.php item = $item");
 $realfn = get_mapping($s_dir,$item,$source);
+lg("FUNCTION:  EXISTS_ITEM in files.php AFTER GET_MAPPING FILE=$file");
 if ($realfn === false){
 	lg("EXISTS_ITEM in files.php returned false for s_dir = $s_dir item = $item source = $source");
 	return false;
@@ -168,7 +177,9 @@ function rename_item($s_dir,$itemf,$itemt,$source) { #external
 $f_state = $s_dir . "_" . $source . ".state";
 file_load($f_state, $STATE);
 #map_$realfn=$item
+lg("FUNCTION: RENAME_ITEM in files.php item = $item");
 $realfn = get_mapping($s_dir,$itemf,$source);
+lg("FUNCTION:  RENAME_ITEM in files.php AFTER GET_MAPPING FILE=$file");
 $STATE["map_$realfn"] = $itemt;
 $hash = $STATE["hash_$itemf"];
 unset($STATE["hash_$itemf"]);

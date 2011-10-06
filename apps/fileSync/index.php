@@ -6,7 +6,7 @@ include("logging.php");
 include("sync_send.php");
 include("conflicts.php");
 include("states.php");
-include("files.php");
+include("files_fileSync.php");
 include("get_response.php");
 include("config.php");
 parse_config(); #config.php

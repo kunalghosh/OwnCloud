@@ -1,5 +1,5 @@
 <?php
-//include("files.php"); //already included
+//include("files_fileSync.php"); //already included
 
 /*
 function file_load($filename, &$ARRAY) {
@@ -180,7 +180,7 @@ file_load($f_state, $STATE);
 unset($STATE["hash_$item"]);
 file_save($f_state, $STATE);
 }
-*/ //moved to files.php
+*/ //moved to files_fileSync.php
 /////////////////////////////////////////////////////////////////
 
 function add_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$source,$MoreData) {
@@ -231,7 +231,7 @@ function replace_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$sourc
 // replace_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$sdata);
 global $user_dir;	
 if ($auth) {
-	lg("FUNCTION: REPLACE_CONTACT in files.php item = $item");
+	lg("FUNCTION: REPLACE_CONTACT in files_fileSync.php item = $item");
 	$result = "200";
 	#$s_dir = $user_dir . "/" . $lsrv;
 	$s_dir = $user_dir;

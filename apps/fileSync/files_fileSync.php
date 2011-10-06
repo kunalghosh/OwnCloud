@@ -7,9 +7,9 @@
 function get_item($s_dir,$item,$source) { #external
 #
 #get filename realfn. use it
-lg("FUNCTION: GET_ITEM in files.php item = $item");
+lg("FUNCTION: GET_ITEM in files_fileSync.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
-lg("FUNCTION: GET_ITEM IN files.php AFTER GET_MAPPING FILE=$file");
+lg("FUNCTION: GET_ITEM IN files_fileSync.php AFTER GET_MAPPING FILE=$file");
 if ($file === false) return false;
 #read contents	
 $fitem = fopen($s_dir . "/" . $file, "r");
@@ -38,9 +38,9 @@ return write_item($s_dir,$item,$data,$source);
 function write_item($s_dir,$item,$data,$source) { #external
 #writes contents	
 #gen new filename realfn. use it
-lg("FUNCTION: WRITE_ITEM in files.php item = $item");
+lg("FUNCTION: WRITE_ITEM in files_fileSync.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
-lg("FUNCTION: WRITE_ITEM IN files.php AFTER GET_MAPPING FILE=$file");
+lg("FUNCTION: WRITE_ITEM IN files_fileSync.php AFTER GET_MAPPING FILE=$file");
 if ($file === false) return false;
 #write contents
 $fitem = fopen($s_dir . "/" . $file, "w");
@@ -66,9 +66,9 @@ if (! unlink($s_dir . "/" . $item)) lg("unable to remove $s_dir/$item");
 $STATE = Array();
 $f_state = $s_dir . "_" . $source . ".state";
 file_load($f_state, $STATE);
-lg("FUNCTION: REMOVE_ITEM in files.php item = $item");
+lg("FUNCTION: REMOVE_ITEM in files_fileSync.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
-lg("FUNCTION:  REMOVE_ITEM in files.php AFTER GET_MAPPING FILE=$file");
+lg("FUNCTION:  REMOVE_ITEM in files_fileSync.php AFTER GET_MAPPING FILE=$file");
 unset($STATE["map_$file"]);
 unset($STATE["hash_$item"]);
 lg("Function : remove_item f_state = $fstate ");
@@ -113,9 +113,9 @@ return true;
 
 function remove_mapping($s_dir,$item,$source) {#external, rare?
 $f_state = $s_dir . "_" . $source . ".state";
-lg("FUNCTION: REMOVE_MAPPING in files.php item = $item");
+lg("FUNCTION: REMOVE_MAPPING in files_fileSync.php item = $item");
 $file = get_mapping($s_dir,$item,$source);
-lg("FUNCTION:  REMOVE_MAPPING in files.php AFTER GET_MAPPING FILE=$file");
+lg("FUNCTION:  REMOVE_MAPPING in files_fileSync.php AFTER GET_MAPPING FILE=$file");
 file_load($f_state, $STATE); #it can be faster to do append
 unset($STATE["map_$file"]);
 lg("Function : remove_mapping f_state = $fstate ");
@@ -156,17 +156,17 @@ return true;
 };
 
 function exists_item($s_dir,$item,$source) { #external
-lg("FUNCTION: EXISTS_ITEM in files.php item = $item");
+lg("FUNCTION: EXISTS_ITEM in files_fileSync.php item = $item");
 $realfn = get_mapping($s_dir,$item,$source);
-lg("FUNCTION:  EXISTS_ITEM in files.php AFTER GET_MAPPING FILE=$file");
+lg("FUNCTION:  EXISTS_ITEM in files_fileSync.php AFTER GET_MAPPING FILE=$file");
 if ($realfn === false){
-	lg("EXISTS_ITEM in files.php returned false for s_dir = $s_dir item = $item source = $source");
+	lg("EXISTS_ITEM in files_fileSync.php returned false for s_dir = $s_dir item = $item source = $source");
 	return false;
 }
 if ( ! is_dir($s_dir)){
 #check if the directory exists, if not return that
 #the item doesn't exist.
-	lg("EXISTS_ITEM in files.php returned false for s_dir = $s_dir item = $item source = $source");
+	lg("EXISTS_ITEM in files_fileSync.php returned false for s_dir = $s_dir item = $item source = $source");
 	return false;	
 }
 return file_exists($s_dir . "/" . $realfn);
@@ -177,9 +177,9 @@ function rename_item($s_dir,$itemf,$itemt,$source) { #external
 $f_state = $s_dir . "_" . $source . ".state";
 file_load($f_state, $STATE);
 #map_$realfn=$item
-lg("FUNCTION: RENAME_ITEM in files.php item = $item");
+lg("FUNCTION: RENAME_ITEM in files_fileSync.php item = $item");
 $realfn = get_mapping($s_dir,$itemf,$source);
-lg("FUNCTION:  RENAME_ITEM in files.php AFTER GET_MAPPING FILE=$file");
+lg("FUNCTION:  RENAME_ITEM in files_fileSync.php AFTER GET_MAPPING FILE=$file");
 $STATE["map_$realfn"] = $itemt;
 $hash = $STATE["hash_$itemf"];
 unset($STATE["hash_$itemf"]);

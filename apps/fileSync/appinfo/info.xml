@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<info>
+        <id>fileSync</id>
+        <name>Sync everything</name>
+        <description>Sync everything SyncML</description>
+        <version>0.1</version>
+        <licence>AGPL</licence>
+        <author>Kunal Ghosh, Antonio J. Gallo</author>
+        <require>2</require>
+</info>
+

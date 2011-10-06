@@ -4,7 +4,7 @@ error_reporting(0);
 
 include("logging.php");
 include("sync_send.php");
-include("conflicts.php");
+include("conflicts_fileSync.php");
 include("states.php");
 include("files_fileSync.php");
 include("get_response.php");

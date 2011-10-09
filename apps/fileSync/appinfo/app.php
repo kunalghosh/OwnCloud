@@ -12,10 +12,10 @@ OC_APP::addNavigationEntry(array(
     "icon" => OC_HELPER::imagePath("fileSync", "icon.png"),
     "name" => "fileSync"));
 
-OC_APP::addSettingsPage(array(
-    "id" => "fileSync_settings",
-    "order" => 11,
-    "href" => OC_HELPER::linkTo("fileSync", "settings.php"),
-    "name" => "fileSync",
-    "icon" => OC_HELPER::imagePath("fileSync", "icon.png")));
+#OC_APP::addSettingsPage(array(
+#    "id" => "fileSync_settings",
+#    "order" => 11,
+#    "href" => OC_HELPER::linkTo("fileSync", "settings.php"),
+#    "name" => "fileSync",
+#    "icon" => OC_HELPER::imagePath("fileSync", "icon.png")));
 ?>

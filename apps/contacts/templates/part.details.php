@@ -1,5 +1,5 @@
 <?php if(array_key_exists('FN',$_['details'])): ?>
-	<table>
+	<table id="contacts_details">
 		<?php if(isset($_['details']['PHOTO'])): // Emails first ?>
 			<tr class="contacts_details_property">
 				<td class="contacts_details_left">&nbsp;</td>
@@ -27,9 +27,8 @@
 			<?php endif; ?>
 		<?php endforeach; ?>
 	</table>
+	<form>
+		<img class="svg action" id="contacts_deletecard" src="<?php echo image_path('', 'actions/delete.svg'); ?>" title="<?php echo $l->t('Delete contact');?>" />
+		<input type="button" id="contacts_addproperty" value="<?php echo $l->t('Add Property');?>">
+	</form>
 <?php endif; ?>
-
-<div id="contacts_cardoptions">
-	<a id="contacts_deletecard"><img class="svg action" alt="<?php echo $l->t('Delete');?>" src="<?php echo image_path('', 'actions/delete.svg'); ?>" /></a>
-	<a id="contacts_addproperty"><img class="svg action" alt="<?php echo $l->t('Download');?>" src="<?php echo image_path('', 'actions/download.svg'); ?>" /></a>
-</div>

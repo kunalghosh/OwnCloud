@@ -28,16 +28,14 @@ function contacts_namesort($a,$b){
 require_once('../../lib/base.php');
 
 // Check if we are a user
-if( !OC_User::isLoggedIn()){
-	header( 'Location: '.OC_Helper::linkTo( '', 'index.php' ));
-	exit();
-}
+OC_Util::checkLoggedIn();
+OC_Util::checkAppEnabled('contacts');
 
 // Check if the user has an addressbook
-$addressbooks = OC_Contacts_Addressbook::allAddressbooks(OC_User::getUser());
+$addressbooks = OC_Contacts_Addressbook::all(OC_User::getUser());
 if( count($addressbooks) == 0){
-	OC_Contacts_Addressbook::addAddressbook(OC_User::getUser(),'default','Default Address Book');
-	$addressbooks = OC_Contacts_Addressbook::allAddressbooks(OC_User::getUser());
+	OC_Contacts_Addressbook::add(OC_User::getUser(),'default','Default Address Book');
+	$addressbooks = OC_Contacts_Addressbook::all(OC_User::getUser());
 }
 $prefbooks = OC_Preferences::getValue(OC_User::getUser(),'contacts','openaddressbooks',null);
 if(is_null($prefbooks)){
@@ -58,8 +56,11 @@ $openaddressbooks = explode(';',$prefbooks);
 
 $contacts = array();
 foreach( $openaddressbooks as $addressbook ){
-	$addressbookcontacts = OC_Contacts_Addressbook::allCards($addressbook);
+	$addressbookcontacts = OC_Contacts_VCard::all($addressbook);
 	foreach( $addressbookcontacts as $contact ){
+		if(is_null($contact['fullname'])){
+			continue;
+		}
 		$contacts[] = array( 'name' => $contact['fullname'], 'id' => $contact['id'] );
 	}
 }
@@ -70,9 +71,9 @@ $details = array();
 
 if( !is_null($id) || count($contacts)){
 	if(is_null($id)) $id = $contacts[0]['id'];
-	$contact = OC_Contacts_Addressbook::findCard($id);
-	$vcard = Sabre_VObject_Reader::read($contact['carddata']);
-	$details = OC_Contacts_Addressbook::structureContact($vcard);
+	$contact = OC_Contacts_VCard::find($id);
+	$vcard = OC_Contacts_VCard::parse($contact['carddata']);
+	$details = OC_Contacts_VCard::structureContact($vcard);
 }
 
 // Process the template

@@ -1,15 +1,18 @@
 $(document).ready(function(){
-	/* $('.contacts_addressbooksexpander').click(function(){
-		$('.contacts_addressbooksdetails').toggle();
-		return false;
-	});*/
-
+	/*-------------------------------------------------------------------------
+	 * Event handlers
+	 *-----------------------------------------------------------------------*/
 	$('#leftcontent li').live('click',function(){
 		var id = $(this).data('id');
+		var oldid = $('#rightcontent').data('id');
+		if(oldid != 0){
+			$('#leftcontent li[data-id="'+oldid+'"]').removeClass('active');
+		}
 		$.getJSON('ajax/getdetails.php',{'id':id},function(jsondata){
 			if(jsondata.status == 'success'){
 				$('#rightcontent').data('id',jsondata.data.id);
 				$('#rightcontent').html(jsondata.data.page);
+				$('#leftcontent li[data-id="'+jsondata.data.id+'"]').addClass('active');
 			}
 			else{
 				alert(jsondata.data.message);
@@ -24,7 +27,7 @@ $(document).ready(function(){
 			if(jsondata.status == 'success'){
 				$('#leftcontent [data-id="'+jsondata.data.id+'"]').remove();
 				$('#rightcontent').data('id','');
-				$('#rightcontent').html('');
+				$('#rightcontent').empty();
 			}
 			else{
 				alert(jsondata.data.message);
@@ -65,7 +68,7 @@ $(document).ready(function(){
 	$('#contacts_addpropertyform input[type="submit"]').live('click',function(){
 		$.post('ajax/addproperty.php',$('#contacts_addpropertyform').serialize(),function(jsondata){
 			if(jsondata.status == 'success'){
-				$('#contacts_cardoptions').before(jsondata.data.page);
+				$('#contacts_details').append(jsondata.data.page);
 				$('#contacts_addpropertyform').remove();
 				$('#contacts_addcontactsparts').remove();
 			}
@@ -94,6 +97,8 @@ $(document).ready(function(){
 			if(jsondata.status == 'success'){
 				$('#rightcontent').data('id',jsondata.data.id);
 				$('#rightcontent').html(jsondata.data.page);
+				$('#leftcontent .active').removeClass('active');
+				$('#leftcontent ul').append('<li data-id="'+jsondata.data.id+'" class="active"><a href="index.php?id='+jsondata.data.id+'">'+jsondata.data.name+'</a></li>');
 			}
 			else{
 				alert(jsondata.data.message);
@@ -117,7 +122,7 @@ $(document).ready(function(){
 	});
 
 	$('#contacts_setpropertyform input[type="submit"]').live('click',function(){
-		$.post('ajax/setproperty.php',$('#contacts_setpropertyform').serialize(),function(jsondata){
+		$.post('ajax/setproperty.php',$(this).parent('form').serialize(),function(jsondata){
 			if(jsondata.status == 'success'){
 				$('.contacts_details_property[data-checksum="'+jsondata.data.oldchecksum+'"]').replaceWith(jsondata.data.page);
 			}

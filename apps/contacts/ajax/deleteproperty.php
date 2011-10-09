@@ -30,25 +30,28 @@ $checksum = $_GET['checksum'];
 $l10n = new OC_L10N('contacts');
 
 // Check if we are a user
-if( !OC_User::isLoggedIn()){
-	echo json_encode( array( 'status' => 'error', 'data' => array( 'message' => $l10n->t('You need to log in!'))));
-	exit();
-}
+OC_JSON::checkLoggedIn();
+OC_JSON::checkAppEnabled('contacts');
 
-
-$card = OC_Contacts_Addressbook::findCard( $id );
+$card = OC_Contacts_VCard::find( $id );
 if( $card === false ){
-	echo json_encode( array( 'status' => 'error', 'data' => array( 'message' => $l10n->t('Can not find Contact!'))));
+	OC_JSON::error(array('data' => array( 'message' => $l10n->t('Contact could not be found.'))));
 	exit();
 }
 
-$addressbook = OC_Contacts_Addressbook::findAddressbook( $card['addressbookid'] );
+$addressbook = OC_Contacts_Addressbook::find( $card['addressbookid'] );
 if( $addressbook === false || $addressbook['userid'] != OC_USER::getUser()){
-	echo json_encode( array( 'status' => 'error', 'data' => array( 'message' => $l10n->t('This is not your contact!'))));
+	OC_JSON::error(array('data' => array( 'message' => $l10n->t('This is not your contact.'))));
 	exit();
 }
 
-$vcard = Sabre_VObject_Reader::read($card['carddata']);
+$vcard = OC_Contacts_VCard::parse($card['carddata']);
+// Check if the card is valid
+if(is_null($vcard)){
+	OC_JSON::error(array('data' => array( 'message' => $l10n->t('vCard could not be read.'))));
+	exit();
+}
+
 $line = null;
 for($i=0;$i<count($vcard->children);$i++){
 	if(md5($vcard->children[$i]->serialize()) == $checksum ){
@@ -56,11 +59,11 @@ for($i=0;$i<count($vcard->children);$i++){
 	}
 }
 if(is_null($line)){
-	echo json_encode( array( 'status' => 'error', 'data' => array( 'message' => $l10n->t('Information about vCard is incorrect. Please reload page!'))));
+	OC_JSON::error(array('data' => array( 'message' => $l10n->t('Information about vCard is incorrect. Please reload the page.'))));
 	exit();
 }
 
 unset($vcard->children[$line]);
 
-OC_Contacts_Addressbook::editCard($id,$vcard->serialize());
-echo json_encode( array( 'status' => 'success', 'data' => array( 'id' => $id )));
+OC_Contacts_VCard::edit($id,$vcard->serialize());
+OC_JSON::success(array('data' => array( 'id' => $id )));

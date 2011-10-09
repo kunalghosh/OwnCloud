@@ -63,7 +63,7 @@ class OC_Preferences{
 	 * @param $user user
 	 * @returns array with app ids
 	 *
-	 * This function returns a list of all apps of the userthat have at least
+	 * This function returns a list of all apps of the user that have at least
 	 * one entry in the preferences table.
 	 */
 	public static function getApps( $user ){
@@ -116,14 +116,13 @@ class OC_Preferences{
 		// Try to fetch the value, return default if not exists.
 		$query = OC_DB::prepare( 'SELECT configvalue FROM *PREFIX*preferences WHERE userid = ? AND appid = ? AND configkey = ?' );
 		$result = $query->execute( array( $user, $app, $key ));
-
-		if( !$result->numRows()){
+		
+		$row = $result->fetchRow();
+		if($row){
+			return $row["configvalue"];
+		}else{
 			return $default;
 		}
-
-		$row = $result->fetchRow();
-
-		return $row["configvalue"];
 	}
 
 	/**
@@ -141,7 +140,7 @@ class OC_Preferences{
 		// Check if the key does exist
 		$query = OC_DB::prepare( 'SELECT configvalue FROM *PREFIX*preferences WHERE userid = ? AND appid = ? AND configkey = ?' );
 		$values=$query->execute(array($user,$app,$key))->fetchAll();
-		error_log(print_r($values,true));
+		if(defined("DEBUG") && DEBUG) {error_log(print_r($values,true));}
 		$exists=(count($values)>0);
 
 		if( !$exists ){

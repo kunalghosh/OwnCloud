@@ -32,25 +32,21 @@
  * description TEXT,
  * ctag INT(11) UNSIGNED NOT NULL DEFAULT '1'
  * );
- * 
- * CREATE TABLE contacts_cards (
- * id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
- * addressbookid INT(11) UNSIGNED NOT NULL,
- * fullname VARCHAR(255),
- * carddata TEXT,
- * uri VARCHAR(100),
- * lastmodified INT(11) UNSIGNED
- * );
+ *
  */
-
 /**
  * This class manages our addressbooks.
  */
 class OC_Contacts_Addressbook{
-	public static function allAddressbooks($uid){
+	/**
+	 * @brief Returns the list of addressbooks for a specific user.
+	 * @param string $uid
+	 * @return array
+	 */
+	public static function all($uid){
 		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*contacts_addressbooks WHERE userid = ?' );
 		$result = $stmt->execute(array($uid));
-		
+
 		$addressbooks = array();
 		while( $row = $result->fetchRow()){
 			$addressbooks[] = $row;
@@ -58,21 +54,38 @@ class OC_Contacts_Addressbook{
 
 		return $addressbooks;
 	}
-	
-	public static function allAddressbooksWherePrincipalURIIs($principaluri){
+
+	/**
+	 * @brief Returns the list of addressbooks for a principal (DAV term of user)
+	 * @param string $principaluri
+	 * @return array
+	 */
+	public static function allWherePrincipalURIIs($principaluri){
 		$uid = self::extractUserID($principaluri);
-		return self::allAddressbooks($uid);
+		return self::all($uid);
 	}
 
-	public static function findAddressbook($id){
+	/**
+	 * @brief Gets the data of one address book
+	 * @param integer $id
+	 * @return associative array
+	 */
+	public static function find($id){
 		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*contacts_addressbooks WHERE id = ?' );
 		$result = $stmt->execute(array($id));
 
 		return $result->fetchRow();
 	}
 
-	public static function addAddressbook($userid,$name,$description){
-		$all = self::allAddressbooks($userid);
+	/**
+	 * @brief Creates a new address book
+	 * @param string $userid
+	 * @param string $name
+	 * @param string $description
+	 * @return insertid
+	 */
+	public static function add($userid,$name,$description){
+		$all = self::all($userid);
 		$uris = array();
 		foreach($all as $i){
 			$uris[] = $i['uri'];
@@ -86,16 +99,31 @@ class OC_Contacts_Addressbook{
 		return OC_DB::insertid();
 	}
 
-	public static function addAddressbookFromDAVData($principaluri,$uri,$name,$description){
+	/**
+	 * @brief Creates a new address book from the data sabredav provides
+	 * @param string $principaluri
+	 * @param string $uri
+	 * @param string $name
+	 * @param string $description
+	 * @return insertid
+	 */
+	public static function addFromDAVData($principaluri,$uri,$name,$description){
 		$userid = self::extractUserID($principaluri);
-		
+
 		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*contacts_addressbooks (userid,displayname,uri,description,ctag) VALUES(?,?,?,?,?)' );
 		$result = $stmt->execute(array($userid,$name,$uri,$description,1));
 
 		return OC_DB::insertid();
 	}
 
-	public static function editAddressbook($id,$name,$description){
+	/**
+	 * @brief Edits an addressbook
+	 * @param integer $id
+	 * @param string $name
+	 * @param string $description
+	 * @return boolean
+	 */
+	public static function edit($id,$name,$description){
 		// Need these ones for checking uri
 		$addressbook = self::find($id);
 
@@ -105,151 +133,48 @@ class OC_Contacts_Addressbook{
 		if(is_null($description)){
 			$description = $addressbook['description'];
 		}
-		
+
 		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*contacts_addressbooks SET displayname=?,description=?, ctag=ctag+1 WHERE id=?' );
 		$result = $stmt->execute(array($name,$description,$id));
 
 		return true;
 	}
 
-	public static function touchAddressbook($id){
+	/**
+	 * @brief removes an address book
+	 * @param integer $id
+	 * @return boolean
+	 */
+	public static function delete($id){
+		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*contacts_addressbooks WHERE id = ?' );
+		$stmt->execute(array($id));
+
+		$cards = OC_Contacts_VCard::all($id);
+		foreach($cards as $card){
+			OC_Contacts_VCard::delete($card['id']);
+		}
+
+		return true;
+	}
+
+	/**
+	 * @brief Updates ctag for addressbook
+	 * @param integer $id
+	 * @return boolean
+	 */
+	public static function touch($id){
 		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*contacts_addressbooks SET ctag = ctag + 1 WHERE id = ?' );
 		$stmt->execute(array($id));
 
 		return true;
 	}
 
-	public static function deleteAddressbook($id){
-		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*contacts_addressbooks WHERE id = ?' );
-		$stmt->execute(array($id));
-		
-		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*contacts_cards WHERE addressbookid = ?' );
-		$stmt->execute(array($id));
-
-		return true;
-	}
-
-	public static function allCards($id){
-		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*contacts_cards WHERE addressbookid = ?' );
-		$result = $stmt->execute(array($id));
-
-		$addressbooks = array();
-		while( $row = $result->fetchRow()){
-			$addressbooks[] = $row;
-		}
-
-		return $addressbooks;
-	}
-	
-	public static function findCard($id){
-		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*contacts_cards WHERE id = ?' );
-		$result = $stmt->execute(array($id));
-
-		return $result->fetchRow();
-	}
-
-	public static function findCardWhereDAVDataIs($aid,$uri){
-		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*contacts_cards WHERE addressbookid = ? AND uri = ?' );
-		$result = $stmt->execute(array($aid,$uri));
-
-		return $result->fetchRow();
-	}
-
-	public static function addCard($id,$data){
-		$fn = null;
-		$uri = null;
-		$card = Sabre_VObject_Reader::read($data);
-		foreach($card->children as $property){
-			if($property->name == 'FN'){
-				$fn = $property->value;
-			}
-			elseif(is_null($uri) && $property->name == 'UID' ){
-				$uri = $property->value.'.vcf';
-			}
-		}
-		if(is_null($uri)){
-			$uid = self::createUID();
-			$uri = $uid.'.vcf';
-			$card->add(new Sabre_VObject_Property('UID',$uid));
-			$data = $card->serialize();
-		};
-
-		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*contacts_cards (addressbookid,fullname,carddata,uri,lastmodified) VALUES(?,?,?,?,?)' );
-		$result = $stmt->execute(array($id,$fn,$data,$uri,time()));
-
-		self::touchAddressbook($id);
-
-		return OC_DB::insertid();
-	}
-
-	public static function addCardFromDAVData($id,$uri,$data){
-		$fn = null;
-		$card = Sabre_VObject_Reader::read($data);
-		foreach($card->children as $property){
-			if($property->name == 'FN'){
-				$fn = $property->value;
-			}
-		}
-
-		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*contacts_cards (addressbookid,fullname,carddata,uri,lastmodified) VALUES(?,?,?,?,?)' );
-		$result = $stmt->execute(array($id,$fn,$data,$uri,time()));
-
-		self::touchAddressbook($id);
-
-		return OC_DB::insertid();
-	}
-
-	public static function editCard($id, $data){
-		$oldcard = self::findCard($id);
-		$fn = null;
-		$card = Sabre_VObject_Reader::read($data);
-		foreach($card->children as $property){
-			if($property->name == 'FN'){
-				$fn = $property->value;
-			}
-		}
-
-		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*contacts_cards SET fullname = ?,carddata = ?, lastmodified = ? WHERE id = ?' );
-		$result = $stmt->execute(array($fn,$data,time(),$id));
-
-		self::touchAddressbook($oldcard['addressbookid']);
-
-		return true;
-	}
-
-	public static function editCardFromDAVData($aid,$uri,$data){
-		$oldcard = self::findCardWhereDAVDataIs($aid,$uri);
-
-		$fn = null;
-		$card = Sabre_VObject_Reader::read($data);
-		foreach($card->children as $property){
-			if($property->name == 'FN'){
-				$fn = $property->value;
-			}
-		}
-
-		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*contacts_cards SET fullname = ?,carddata = ?, lastmodified = ? WHERE id = ?' );
-		$result = $stmt->execute(array($fn,$data,time(),$oldcard['id']));
-
-		self::touchAddressbook($oldcard['addressbookid']);
-
-		return true;
-	}
-	
-	public static function deleteCard($id){
-		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*contacts_cards WHERE id = ?' );
-		$stmt->execute(array($id));
-
-		return true;
-	}
-
-	public static function deleteCardFromDAVData($aid,$uri){
-		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*contacts_cards WHERE addressbookid = ? AND uri=?' );
-		$stmt->execute(array($aid,$uri));
-
-		return true;
-	}
-	
+	/**
+	 * @brief Creates a URI for Addressbook
+	 * @param string $name name of the addressbook
+	 * @param array  $existing existing addressbook URIs
+	 * @return string new name
+	 */
 	public static function createURI($name,$existing){
 		$name = strtolower($name);
 		$newname = $name;
@@ -261,72 +186,12 @@ class OC_Contacts_Addressbook{
 		return $newname;
 	}
 
-	public static function createUID(){
-		return substr(md5(rand().time()),0,10);
-	}
-	
+	/**
+	 * @brief gets the userid from a principal path
+	 * @return string
+	 */
 	public static function extractUserID($principaluri){
 		list($prefix,$userid) = Sabre_DAV_URLUtil::splitPath($principaluri);
 		return $userid;
-	}
-
-	public static function escapeSemicolons($value){
-		foreach($value as &$i ){
-			$i = implode("\\\\;", explode(';', $i));
-		} unset($i);
-		return implode(';',$value);
-	}
-
-	public static function unescapeSemicolons($value){
-		$array = explode(';',$value);
-		for($i=0;$i<count($array);$i++){
-			if(substr($array[$i],-2,2)=="\\\\"){
-				if(isset($array[$i+1])){
-					$array[$i] = substr($array[$i],0,count($array[$i])-2).';'.$array[$i+1];
-					unset($array[$i+1]);
-				}
-				else{
-					$array[$i] = substr($array[$i],0,count($array[$i])-2).';';
-				}
-				$i = $i - 1;
-			}
-		}
-		return $array;
-	}
-
-	public static function structureContact($object){
-		$details = array();
-		foreach($object->children as $property){
-			$temp = self::structureProperty($property);
-			if(array_key_exists($property->name,$details)){
-				$details[$property->name][] = $temp;
-			}
-			else{
-				$details[$property->name] = array($temp);
-			}
-		}
-		return $details;
-	}
-	
-	public static function structureProperty($property){
-		$value = $property->value;
-		$value = htmlspecialchars($value);
-		if($property->name == 'ADR' || $property->name == 'N'){
-			$value = self::unescapeSemicolons($value);
-		}
-		$temp = array(
-			'name' => $property->name,
-			'value' => $value,
-			'parameters' => array(),
-			'checksum' => md5($property->serialize()));
-		foreach($property->parameters as $parameter){
-			// Faulty entries by kaddressbook
-			if($parameter->name == 'TYPE' && $parameter->value == 'PREF'){
-				$parameter->name = 'PREF';
-				$parameter->value = '1';
-			}
-			$temp['parameters'][$parameter->name] = $parameter->value;
-		}
-		return $temp;
 	}
 }

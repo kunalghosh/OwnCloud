@@ -1,23 +1,9 @@
 <?php
 /**
- * ownCloud - Calendar
- *
- * @author Jakob Sack
- * @copyright 2011 Jakob Sack mail@jakobsack.de
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
- *
- * You should have received a copy of the GNU Affero General Public
- * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * Copyright (c) 2011 Jakob Sack <mail@jakobsack.de>
+ * This file is licensed under the Affero General Public License version 3 or
+ * later.
+ * See the COPYING-README file.
  */
 /*
  *
@@ -36,7 +22,7 @@
  *     uri VARCHAR(100),
  *     lastmodified INT(11)
  * );
- * 
+ *
  * CREATE TABLE calendar_calendars (
  *     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
  *     userid VARCHAR(255),
@@ -44,7 +30,6 @@
  *     uri VARCHAR(100),
  *     active INTEGER UNSIGNED NOT NULL DEFAULT '0',
  *     ctag INTEGER UNSIGNED NOT NULL DEFAULT '0',
- *     description TEXT,
  *     calendarorder INTEGER UNSIGNED NOT NULL DEFAULT '0',
  *     calendarcolor VARCHAR(10),
  *     timezone TEXT,
@@ -56,16 +41,24 @@
  * This class manages our calendars
  */
 class OC_Calendar_Calendar{
+	/**
+	 * @brief Returns the list of calendars for a specific user.
+	 * @param string $uid User ID
+	 * @param boolean $active
+	 * @return array
+	 *
+	 * TODO: what is active for?
+	 */
 	public static function allCalendars($uid, $active=null){
 		$values = array($uid);
 		$active_where = '';
-		if (!is_null($active)){
+		if (!is_null($active) && $active){
 			$active_where = ' AND active = ?';
 			$values[] = $active;
 		}
 		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*calendar_calendars WHERE userid = ?' . $active_where );
 		$result = $stmt->execute($values);
-		
+
 		$calendars = array();
 		while( $row = $result->fetchRow()){
 			$calendars[] = $row;
@@ -73,12 +66,22 @@ class OC_Calendar_Calendar{
 
 		return $calendars;
 	}
-	
+
+	/**
+	 * @brief Returns the list of calendars for a principal (DAV term of user)
+	 * @param string $principaluri
+	 * @return array
+	 */
 	public static function allCalendarsWherePrincipalURIIs($principaluri){
 		$uid = self::extractUserID($principaluri);
 		return self::allCalendars($uid);
 	}
 
+	/**
+	 * @brief Gets the data of one calendar
+	 * @param integer $id
+	 * @return associative array
+	 */
 	public static function findCalendar($id){
 		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*calendar_calendars WHERE id = ?' );
 		$result = $stmt->execute(array($id));
@@ -86,7 +89,17 @@ class OC_Calendar_Calendar{
 		return $result->fetchRow();
 	}
 
-	public static function addCalendar($userid,$name,$description,$components='VEVENT,VTODO,VJOURNAL',$timezone=null,$order=0,$color=null){
+	/**
+	 * @brief Creates a new calendar
+	 * @param string $userid
+	 * @param string $name
+	 * @param string $components Default: "VEVENT,VTODO,VJOURNAL"
+	 * @param string $timezone Default: null
+	 * @param integer $order Default: 1
+	 * @param string $color Default: null
+	 * @return insertid
+	 */
+	public static function addCalendar($userid,$name,$components='VEVENT,VTODO,VJOURNAL',$timezone=null,$order=0,$color=null){
 		$all = self::allCalendars($userid);
 		$uris = array();
 		foreach($all as $i){
@@ -95,39 +108,67 @@ class OC_Calendar_Calendar{
 
 		$uri = self::createURI($name, $uris );
 
-		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*calendar_calendars (userid,displayname,uri,ctag,description,calendarorder,calendarcolor,timezone,components) VALUES(?,?,?,?,?,?,?,?,?)' );
-		$result = $stmt->execute(array($userid,$name,$uri,1,$description,$order,$color,$timezone,$components));
+		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*calendar_calendars (userid,displayname,uri,ctag,calendarorder,calendarcolor,timezone,components) VALUES(?,?,?,?,?,?,?,?)' );
+		$result = $stmt->execute(array($userid,$name,$uri,1,$order,$color,$timezone,$components));
 
 		return OC_DB::insertid();
 	}
 
-	public static function addCalendarFromDAVData($principaluri,$uri,$name,$description,$components,$timezone,$order,$color){
+	/**
+	 * @brief Creates a new calendar from the data sabredav provides
+	 * @param string $principaluri
+	 * @param string $uri
+	 * @param string $name
+	 * @param string $components
+	 * @param string $timezone
+	 * @param integer $order
+	 * @param string $color
+	 * @return insertid
+	 */
+	public static function addCalendarFromDAVData($principaluri,$uri,$name,$components,$timezone,$order,$color){
 		$userid = self::extractUserID($principaluri);
-		
-		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*calendar_calendars (userid,displayname,uri,ctag,description,calendarorder,calendarcolor,timezone,components) VALUES(?,?,?,?,?,?,?,?,?)' );
-		$result = $stmt->execute(array($userid,$name,$uri,1,$description,$order,$color,$timezone,$components));
+
+		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*calendar_calendars (userid,displayname,uri,ctag,calendarorder,calendarcolor,timezone,components) VALUES(?,?,?,?,?,?,?,?)' );
+		$result = $stmt->execute(array($userid,$name,$uri,1,$order,$color,$timezone,$components));
 
 		return OC_DB::insertid();
 	}
 
-	public static function editCalendar($id,$name=null,$description=null,$components=null,$timezone=null,$order=null,$color=null){
+	/**
+	 * @brief Edits a calendar
+	 * @param integer $id
+	 * @param string $name Default: null
+	 * @param string $components Default: null
+	 * @param string $timezone Default: null
+	 * @param integer $order Default: null
+	 * @param string $color Default: null
+	 * @return boolean
+	 *
+	 * Values not null will be set
+	 */
+	public static function editCalendar($id,$name=null,$components=null,$timezone=null,$order=null,$color=null){
 		// Need these ones for checking uri
 		$calendar = self::findCalendar($id);
 
 		// Keep old stuff
 		if(is_null($name)) $name = $calendar['name'];
-		if(is_null($description)) $description = $calendar['description'];
 		if(is_null($components)) $components = $calendar['components'];
 		if(is_null($timezone)) $timezone = $calendar['timezone'];
 		if(is_null($order)) $order = $calendar['calendarorder'];
 		if(is_null($color)) $color = $calendar['color'];
-		
-		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*calendar_calendars SET displayname=?,description=?,calendarorder=?,calendarcolor=?,timezone=?,components=?,ctag=ctag+1 WHERE id=?' );
-		$result = $stmt->execute(array($name,$description,$order,$color,$timezone,$components,$id));
+
+		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*calendar_calendars SET displayname=?,calendarorder=?,calendarcolor=?,timezone=?,components=?,ctag=ctag+1 WHERE id=?' );
+		$result = $stmt->execute(array($name,$order,$color,$timezone,$components,$id));
 
 		return true;
 	}
 
+	/**
+	 * @brief Sets a calendar (in)active
+	 * @param integer $id
+	 * @param boolean $active
+	 * @return boolean
+	 */
 	public static function setCalendarActive($id,$active){
 		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*calendar_calendars SET active = ? WHERE id = ?' );
 		$stmt->execute(array($active, $id));
@@ -135,6 +176,11 @@ class OC_Calendar_Calendar{
 		return true;
 	}
 
+	/**
+	 * @brief Updates ctag for calendar
+	 * @param integer $id
+	 * @return boolean
+	 */
 	public static function touchCalendar($id){
 		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*calendar_calendars SET ctag = ctag + 1 WHERE id = ?' );
 		$stmt->execute(array($id));
@@ -142,116 +188,27 @@ class OC_Calendar_Calendar{
 		return true;
 	}
 
+	/**
+	 * @brief removes a calendar
+	 * @param integer $id
+	 * @return boolean
+	 */
 	public static function deleteCalendar($id){
 		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*calendar_calendars WHERE id = ?' );
 		$stmt->execute(array($id));
-		
+
 		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*calendar_objects WHERE calendarid = ?' );
 		$stmt->execute(array($id));
 
 		return true;
 	}
 
-	public static function allCalendarObjects($id){
-		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*calendar_objects WHERE calendarid = ?' );
-		$result = $stmt->execute(array($id));
-
-		$calendarobjects = array();
-		while( $row = $result->fetchRow()){
-			$calendarobjects[] = $row;
-		}
-
-		return $calendarobjects;
-	}
-	
-	public static function findCalendarObject($id){
-		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*calendar_objects WHERE id = ?' );
-		$result = $stmt->execute(array($id));
-
-		return $result->fetchRow();
-	}
-
-	public static function findCalendarObjectWhereDAVDataIs($cid,$uri){
-		$stmt = OC_DB::prepare( 'SELECT * FROM *PREFIX*calendar_objects WHERE calendarid = ? AND uri = ?' );
-		$result = $stmt->execute(array($cid,$uri));
-
-		return $result->fetchRow();
-	}
-
-	public static function addCalendarObject($id,$data){
-		$object = Sabre_VObject_Reader::read($data);
-		list($type,$startdate,$enddate,$summary,$repeating,$uid) = self::extractData($object);
-
-		if(is_null($uid)){
-			$uid = self::createUID();
-			$object->add('UID',$uid);
-			$data = $object->serialize();
-		}
-
-		$uri = 'owncloud-'.md5($data.rand().time()).'.ics';
-
-		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*calendar_objects (calendarid,objecttype,startdate,enddate,repeating,summary,calendardata,uri,lastmodified) VALUES(?,?,?,?,?,?,?,?,?)' );
-		$result = $stmt->execute(array($id,$type,$startdate,$enddate,$repeating,$summary,$data,$uri,time()));
-
-		self::touchCalendar($id);
-
-		return OC_DB::insertid();
-	}
-
-	public static function addCalendarObjectFromDAVData($id,$uri,$data){
-		$object = Sabre_VObject_Reader::read($data);
-		list($type,$startdate,$enddate,$summary,$repeating,$uid) = self::extractData($object);
-
-		$stmt = OC_DB::prepare( 'INSERT INTO *PREFIX*calendar_objects (calendarid,objecttype,startdate,enddate,repeating,summary,calendardata,uri,lastmodified) VALUES(?,?,?,?,?,?,?,?,?)' );
-		$result = $stmt->execute(array($id,$type,$startdate,$enddate,$repeating,$summary,$data,$uri,time()));
-
-		self::touchCalendar($id);
-
-		return OC_DB::insertid();
-	}
-
-	public static function editCalendarObject($id, $data){
-		$oldobject = self::findCard($id);
-		
-		$object = Sabre_VObject_Reader::read($data);
-		list($type,$startdate,$enddate,$summary,$repeating,$uid) = self::extractData($object);
-
-		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*calendar_objects SET objecttype=?,startdate=?,enddate=?,repeating=?,summary=?,calendardata=?, lastmodified = ? WHERE id = ?' );
-		$result = $stmt->execute(array($type,$startdate,$enddate,$repeating,$summary,$data,time(),$id));
-
-		self::touchCalendar($id);
-
-		return true;
-	}
-
-	public static function editCalendarObjectFromDAVData($cid,$uri,$data){
-		$oldobject = self::findCardWhereDAVDataIs($cid,$uri);
-		
-		$object = Sabre_VObject_Reader::read($data);
-		list($type,$startdate,$enddate,$summary,$repeating,$uid) = self::extractData($object);
-
-		$stmt = OC_DB::prepare( 'UPDATE *PREFIX*calendar_objects SET objecttype=?,startdate=?,enddate=?,repeating=?,summary=?,calendardata=?, lastmodified = ? WHERE id = ?' );
-		$result = $stmt->execute(array($type,$startdate,$enddate,$repeating,$summary,$data,time(),$oldobject['id']));
-
-		self::touchCalendar($oldobject['calendarid']);
-
-		return true;
-	}
-	
-	public static function deleteCalendarObject($id){
-		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*calendar_objects WHERE id = ?' );
-		$stmt->execute(array($id));
-
-		return true;
-	}
-
-	public static function deleteCalendarObjectFromDAVData($cid,$uri){
-		$stmt = OC_DB::prepare( 'DELETE FROM *PREFIX*calendar_objects WHERE calendarid = ? AND uri=?' );
-		$stmt->execute(array($cid,$uri));
-
-		return true;
-	}
-	
+	/**
+	 * @brief Creates a URI for Calendar
+	 * @param string $name name of the calendar
+	 * @param array  $existing existing calendar URIs
+	 * @return string uri
+	 */
 	public static function createURI($name,$existing){
 		$name = strtolower($name);
 		$newname = $name;
@@ -263,92 +220,12 @@ class OC_Calendar_Calendar{
 		return $newname;
 	}
 
-	public static function createUID(){
-		return substr(md5(rand().time()),0,10);
-	}
-	
+	/**
+	 * @brief gets the userid from a principal path
+	 * @return string
+	 */
 	public static function extractUserID($principaluri){
 		list($prefix,$userid) = Sabre_DAV_URLUtil::splitPath($principaluri);
 		return $userid;
-	}
-
-	protected static function extractData($object){
-		$return = array('',null,null,'',0,null);
-		
-		// Child to use
-		$children = 0;
-		$use = null;
-		foreach($object->children as &$property){
-			if($property->name == 'VEVENT'){
-				$children++;
-				$thisone = true;
-
-				foreach($property->children as &$element){
-					if($element->name == 'RECURRENCE-ID'){
-						$thisone = false;
-					}
-				} unset($element);
-
-				if($thisone){
-					$use = $property;
-				}
-			}
-			elseif($property->name == 'VTODO' || $property->name == 'VJOURNAL'){
-				$return[0] = $use->name;
-				foreach($property->children as &$element){
-					if($property->name == 'SUMMARY'){
-						$return[3] = $property->value;
-					}
-					elseif($property->name == 'UID'){
-						$return[5] = $property->value;
-					}
-				};
-
-				// Only one VTODO or VJOURNAL per object
-				// (only one UID per object but a UID is required by a VTODO =>
-				//    one VTODO per object)
-				break;
-			}
-		} unset($property);
-		
-		// find the data
-		if(!is_null($use)){
-			$return[0] = $use->name;
-			foreach($use->children as &$property){
-				if($property->name == 'DTSTART'){
-					$return[1] = self::getUTCforMDB($property->getDateTime());
-				}
-				elseif($property->name == 'DTEND'){
-					$return[2] = self::getUTCforMDB($property->getDateTime());
-				}
-				elseif($property->name == 'SUMMARY'){
-					$return[3] = $property->value;
-				}
-				elseif($property->name == 'RRULE'){
-					$return[4] = 1;
-				}
-				elseif($property->name == 'UID'){
-					$return[5] = $property->value;
-				}
-			} unset($property);
-		}
-		
-		// More than one child means reoccuring!
-		if($children > 1){
-			$return[4] = 1;
-		}
-		return $return;
-	}
-	
-	/**
-	 * @brief DateTime to UTC string
-	 * @param DateTime $datetime The date to convert
-	 * @returns date as YYYY-MM-DD hh:mm
-	 *
-	 * This function creates a date string that can be used by MDB2.
-	 * Furthermore it converts the time to UTC.
-	 */
-	protected static function getUTCforMDB($datetime){
-		return date('Y-m-d H:i', $datetime->format('U') - $datetime->getOffset());
 	}
 }

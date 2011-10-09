@@ -32,6 +32,15 @@ $(document).ready(function(){
 
 	});
 
+	$('#lostpassword #email').blur(function(event){
+		event.preventDefault();
+		OC.msg.startSaving('#lostpassword .msg');
+		var post = $( "#lostpassword" ).serialize();
+		$.post( 'ajax/lostpassword.php', post, function(data){
+			OC.msg.finishedSaving('#lostpassword .msg', data);
+		});
+	});
+
 	$("#languageinput").chosen();
 
 	$("#languageinput").change( function(){
@@ -48,12 +57,26 @@ $(document).ready(function(){
 		});
 		return false;
 	});
-
-	// reset value when edited, workaround because of .select() not working with disabled inputs
-	$('#webdav').focus(function(event){
-		openidValue = $('#webdav').val();
-	});
-	$('#webdav').blur(function(event){
-		$('#webdav').val(openidValue);
-	});
 } );
+
+OC.msg={
+	startSaving:function(selector){
+		$(selector)
+			.html( t('settings', 'Saving...') )
+			.removeClass('success')
+			.removeClass('error')
+			.stop(true, true)
+			.show();
+	},
+	finishedSaving:function(selector, data){
+		if( data.status == "success" ){
+			 $(selector).html( data.data.message )
+				.addClass('success')
+				.stop(true, true)
+				.delay(3000)
+				.fadeOut(600);
+		}else{
+			$(selector).html( data.data.message ).addClass('error');
+		}
+	}
+}

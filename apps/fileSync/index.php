@@ -1,15 +1,18 @@
 <?php
+
 //ini_set('display_errors','Off');
 error_reporting(0);
 
+require_once('../../lib/base.php');
+
 include("logging.php");
 include("sync_send.php");
-include("conflicts_fileSync.php");
+include("conflicts.php");
 include("states.php");
 include("files_fileSync.php");
 include("get_response.php");
-include("config.php");
-parse_config(); #config.php
+include("config_fileSync.php");
+parse_config(); #config_fileSync.php
 
 lg('working. $Id$'); #what is the use of this ?
 

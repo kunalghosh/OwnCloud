@@ -273,7 +273,7 @@ if ($auth) {
 		if ((! empty($saved_hash)) AND (! empty($file_hash)) AND ($saved_hash != $file_hash)) { #item changed
 			lg("saved: $saved_hash, file: $file_hash. Item changed. Conflict");
 			$result = conflict_solve(1,$s_dir,$item,$data,$source);
-			#conflicts_fileSync.php
+			#conflicts.php
 		} else {
 			//if (file_exists("$s_dir/$item")) {
 			if (exists_item($s_dir,$item,$source)) {

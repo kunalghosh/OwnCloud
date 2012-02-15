@@ -1,3 +1,6 @@
+<input type='hidden' id='hasMySQL' value='<?php echo $_['hasMySQL'] ?>'></input>
+<input type='hidden' id='hasSQLite' value='<?php echo $_['hasSQLite'] ?>'></input>
+<input type='hidden' id='hasPostgreSQL' value='<?php echo $_['hasPostgreSQL'] ?>'></input>
 <form action="index.php" method="post">
 
 <input type="hidden" name="install" value="true" />
@@ -37,7 +40,7 @@
 	</fieldset>
 
 	<fieldset id='databaseField'>
-		<?php if($_['hasMySQL'] or $_['hasPostgreSQL']) $hasOtherDB = true; //other than SQLite ?>
+		<?php if($_['hasMySQL'] or $_['hasPostgreSQL']) $hasOtherDB = true; else $hasOtherDB =false; //other than SQLite ?>
 		<legend><?php echo $l->t( 'Configure the database' ); ?></legend>
 		<div id="selectDbType">
 		<?php if($_['hasSQLite']): ?>

@@ -77,15 +77,17 @@ class OC_Setup {
 			OC_Config::setValue('datadirectory', $datadir);
  			OC_Config::setValue('dbtype', $dbtype);
  			OC_Config::setValue('version',implode('.',OC_Util::getVersion()));
+ 			OC_Config::setValue('installedat',microtime(true));
+ 			OC_Config::setValue('lastupdatedat',microtime(true));
 			if($dbtype == 'mysql') {
 				$dbuser = $options['dbuser'];
 				$dbpass = $options['dbpass'];
 				$dbname = $options['dbname'];
 				$dbhost = $options['dbhost'];
-				$dbtableprefix = 'oc_';
+				$dbtableprefix = isset($options['dbtableprefix']) ? $options['dbtableprefix'] : 'oc_';
 				OC_Config::setValue('dbname', $dbname);
 				OC_Config::setValue('dbhost', $dbhost);
-				OC_Config::setValue('dbtableprefix', 'oc_');
+				OC_Config::setValue('dbtableprefix', $dbtableprefix);
 
 				//check if the database user has admin right
 				$connection = @mysql_connect($dbhost, $dbuser, $dbpass);
@@ -96,35 +98,45 @@ class OC_Setup {
 					);
 				}
 				else {
+					$oldUser=OC_Config::getValue('dbuser', false);
+					$oldPassword=OC_Config::getValue('dbpassword', false);
+					
 					$query="SELECT user FROM mysql.user WHERE user='$dbuser'"; //this should be enough to check for admin rights in mysql
 					if(mysql_query($query, $connection)) {
 						//use the admin login data for the new database user
 
 						//add prefix to the mysql user name to prevent collissions
-						$dbusername=substr('oc_mysql_'.$username,0,16);
-						//hash the password so we don't need to store the admin config in the config file
-						$dbpassword=md5(time().$password);
-						
-						self::createDBUser($dbusername, $dbpassword, $connection);
-						
-						OC_Config::setValue('dbuser', $dbusername);
-						OC_Config::setValue('dbpassword', $dbpassword);
+						$dbusername=substr('oc_'.$username,0,16);
+						if($dbusername!=$oldUser){
+							//hash the password so we don't need to store the admin config in the config file
+							$dbpassword=md5(time().$password);
+
+							self::createDBUser($dbusername, $dbpassword, $connection);
+
+							OC_Config::setValue('dbuser', $dbusername);
+							OC_Config::setValue('dbpassword', $dbpassword);
+						}
 
 						//create the database
 						self::createDatabase($dbname, $dbusername, $connection);
 					}
 					else {
-						OC_Config::setValue('dbuser', $dbuser);
-						OC_Config::setValue('dbpassword', $dbpass);
+						if($dbuser!=$oldUser){
+							OC_Config::setValue('dbuser', $dbuser);
+							OC_Config::setValue('dbpassword', $dbpass);
+						}
 
 						//create the database
 						self::createDatabase($dbname, $dbuser, $connection);
 					}
 
 					//fill the database if needed
-					$query="SELECT * FROM $dbname.{$dbtableprefix}users";
+					$query="select count(*) from information_schema.tables where table_schema='$dbname' AND table_name = '{$dbtableprefix}users';";
 					$result = mysql_query($query,$connection);
-					if(!$result) {
+					if($result){
+						$row=mysql_fetch_row($result);
+					}
+					if(!$result or $row[0]==0) {
 						OC_DB::createDbFromStructure('db_structure.xml');
 					}
 					mysql_close($connection);
@@ -158,8 +170,8 @@ class OC_Setup {
 
 						//add prefix to the postgresql user name to prevent collissions
 						$dbusername='oc_'.$username;
-						//hash the password so we don't need to store the admin config in the config file
-						$dbpassword=md5(time().$password);
+						//create a new password so we don't need to store the admin config in the config file
+						$dbpassword=md5(time());
 						
 						self::pg_createDBUser($dbusername, $dbpassword, $connection);
 						
@@ -177,13 +189,29 @@ class OC_Setup {
 						self::pg_createDatabase($dbname, $dbuser, $connection);
 					}
 
-					//fill the database if needed
-					$query="SELECT * FROM {$dbtableprefix}users";
-					$result = pg_query($connection, $query);
-					if(!$result) {
-						OC_DB::createDbFromStructure('db_structure.xml');
-					}
+					// the connection to dbname=postgres is not needed anymore
 					pg_close($connection);
+
+					// connect to the ownCloud database (dbname=$dbname) an check if it needs to be filled
+					$dbuser = OC_CONFIG::getValue('dbuser');
+					$dbpass = OC_CONFIG::getValue('dbpassword');
+					$connection_string = "host=$dbhost dbname=$dbname user=$dbuser password=$dbpass";
+					$connection = @pg_connect($connection_string);
+					if(!$connection) {
+						$error[] = array(
+							'error' => 'PostgreSQL username and/or password not valid',
+							'hint' => 'You need to enter either an existing account or the administrator.'
+						);
+					} else {
+						$query = "select count(*) FROM pg_class WHERE relname='{$dbtableprefix}users' limit 1";
+						$result = pg_query($connection, $query);
+						if($result) {
+							$row = pg_fetch_row($result);
+						}
+						if(!$result or $row[0]==0) {
+							OC_DB::createDbFromStructure('db_structure.xml');
+						}
+					}
 				}
 			}
 			else {
@@ -219,7 +247,7 @@ class OC_Setup {
 	}
 
 	public static function createDatabase($name,$user,$connection) {
-		//we cant user OC_BD functions here because we need to connect as the administrative user.
+		//we cant use OC_BD functions here because we need to connect as the administrative user.
 		$query = "CREATE DATABASE IF NOT EXISTS  `$name`";
 		$result = mysql_query($query, $connection);
 		if(!$result) {
@@ -241,7 +269,7 @@ class OC_Setup {
 	}
 
 	public static function pg_createDatabase($name,$user,$connection) {
-		//we cant user OC_BD functions here because we need to connect as the administrative user.
+		//we cant use OC_BD functions here because we need to connect as the administrative user.
 		$query = "CREATE DATABASE $name OWNER $user";
 		$result = pg_query($connection, $query);
 		if(!$result) {
@@ -272,6 +300,10 @@ class OC_Setup {
 		$content.= "php_value upload_max_filesize 512M\n";//upload limit
 		$content.= "php_value post_max_size 512M\n";
 		$content.= "SetEnv htaccessWorking true\n";
+		$content.= "</IfModule>\n";
+		$content.= "<IfModule mod_rewrite.c>\n";
+		$content.= "RewriteEngine on\n";
+		$content.= "RewriteRule .* - [env=HTTP_AUTHORIZATION:%{HTTP:Authorization},last]\n";
 		$content.= "</IfModule>\n";
 		$content.= "Options -Indexes\n";
 		@file_put_contents(OC::$SERVERROOT.'/.htaccess', $content); //supress errors in case we don't have permissions for it

@@ -5,6 +5,7 @@
 *
 * @author Arthur Schiwon
 * @copyright 2011 Arthur Schiwon blizzz@arthur-schiwon.de
+* @copyright 2012 David Iwanowitsch <david at unclouded dot de>
 * 
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -30,54 +31,20 @@ require_once('../../../lib/base.php');
 OC_JSON::checkLoggedIn();
 OC_JSON::checkAppEnabled('bookmarks');
 
-$params=array(OC_User::getUser());
-$CONFIG_DBTYPE = OC_Config::getValue( 'dbtype', 'sqlite' );
 
 //Filter for tag?
-$filterTag = isset($_GET['tag']) ? '%' . htmlspecialchars_decode($_GET['tag']) . '%' : false;
-if($filterTag){
-	$sqlFilterTag = 'HAVING tags LIKE ?';
-	$params[] = $filterTag;
-} else {
-	$sqlFilterTag = '';
-}
+$filterTag = isset($_GET['tag']) ? htmlspecialchars_decode($_GET['tag']) : false;
 
 $offset = isset($_GET['page']) ? intval($_GET['page']) * 10 : 0;
-$params[] = $offset;
 
 $sort = isset($_GET['sort']) ? ($_GET['sort']) : 'bookmarks_sorting_recent';
 if($sort == 'bookmarks_sorting_clicks') {
-	$sqlSort = 'clickcount DESC';
+	$sqlSortColumn = 'clickcount';
 } else {
-	$sqlSort = 'id DESC';
+	$sqlSortColumn = 'id';
 }
 
-if( $CONFIG_DBTYPE == 'sqlite' or $CONFIG_DBTYPE == 'sqlite3' ){
-	$_gc_separator = ', \' \'';
-} else {
-	$_gc_separator = 'SEPARATOR \' \'';
-}
 
-$query = OC_DB::prepare('
-	SELECT id, url, title, 
-	CASE WHEN *PREFIX*bookmarks.id = *PREFIX*bookmarks_tags.bookmark_id
-			THEN GROUP_CONCAT( tag ' .$_gc_separator. ' )
-			ELSE \' \'
-		END
-		AS tags
-	FROM *PREFIX*bookmarks
-	LEFT JOIN *PREFIX*bookmarks_tags ON 1=1
-	WHERE (*PREFIX*bookmarks.id = *PREFIX*bookmarks_tags.bookmark_id 
-			OR *PREFIX*bookmarks.id NOT IN (
-				SELECT *PREFIX*bookmarks_tags.bookmark_id FROM *PREFIX*bookmarks_tags
-			)
-		)
-		AND *PREFIX*bookmarks.user_id = ?
-	GROUP BY url
-	'.$sqlFilterTag.'
-	ORDER BY *PREFIX*bookmarks.'.$sqlSort.' 
-	LIMIT ?,  10');
-	
-$bookmarks = $query->execute($params)->fetchAll();
+$bookmarks = OC_Bookmarks_Bookmarks::findBookmarks($offset, $sqlSortColumn, $filterTag, true);
 
 OC_JSON::success(array('data' => $bookmarks));

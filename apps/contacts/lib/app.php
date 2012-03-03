@@ -53,7 +53,7 @@ class OC_Contacts_App {
 				OC_Log::write('contacts', 'Addressbook not found: '. $id, OC_Log::ERROR);
 			}
 			else {
-				OC_Log::write('contacts', 'Addressbook('.$id.') is not from '.$OC_User::getUser(), OC_Log::ERROR);
+				OC_Log::write('contacts', 'Addressbook('.$id.') is not from '.OC_User::getUser(), OC_Log::ERROR);
 			}
 			OC_JSON::error(array('data' => array( 'message' => self::$l10n->t('This is not your addressbook.')))); // Same here (as with the contact error). Could this error be improved?
 			exit();
@@ -83,7 +83,7 @@ class OC_Contacts_App {
 		$vcard = OC_VObject::parse($card['carddata']);
 		// Try to fix cards with missing 'N' field from pre ownCloud 4. Hot damn, this is ugly...
 		if(!is_null($vcard) && !$vcard->__isset('N')) {
-			$appinfo = $info=OC_App::getAppInfo('contacts');
+			$appinfo = OC_App::getAppInfo('contacts');
 			if($appinfo['version'] >= 5) {
 				OC_Log::write('contacts','OC_Contacts_App::getContactVCard. Deprecated check for missing N field', OC_Log::DEBUG);
 			}

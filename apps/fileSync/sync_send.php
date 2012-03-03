@@ -3,6 +3,7 @@
 # do sync should create <Sync>...</Sync> content and return it as a string.
 
 function do_sync_twoway_slow(&$i,$s_dir,$source) {
+    global $appName;
 #slow two-way	
 $twowayslow = "";
 $twowayslow .= "";
@@ -12,7 +13,11 @@ $twowayslow .= "";
 #At this point we'll do usual sync
 #is client deletes all at this point? seems to be not.. then how?..
 $twowayslow = do_sync_twoway($i,$s_dir,$source);
-#In practise, the slow sync means that the client sends all its data in a database to the server and the server does the sync analysis (field-by-field) for this data and the data in the server. After the sync analysis, the server returns all needed modifications back to the client. Also, the client returns the Map items for all data items, which were added by the server. (c) syncml_sync_protocol_v11_20020215.pdf
+#In practise, the slow sync means that the client sends all its data in a database
+// to the server and the server does the sync analysis (field-by-field) for this data
+//  and the data in the server. After the sync analysis, the server returns all needed 
+//  modifications back to the client. Also, the client returns the Map items for all data items,
+//   which were added by the server. (c) syncml_sync_protocol_v11_20020215.pdf
 #So.. I want to try..
 #1. descard status file early (when alert recieved)
 #2. recieve client's data
@@ -27,6 +32,7 @@ return $twowayslow;
 }
 
 function do_sync_twoway(&$i,$s_dir,$source) {
+    global $appName;
 #two way differential
 $twoway = "";
 
@@ -92,18 +98,18 @@ foreach ($SFiles as $file => $hash) {
 $toadd = count($SFiles);
 $todel = count($CFiles);
 $torep = count($DFiles);
-lg("$fcnt files with hashes (unchanged items)");
-lg($toadd . " new items to be sent"); #files wihout hashes
-lg($todel . " old items to be asked to remove"); #hashes wihout files
-lg($torep . " old items to replaced"); #hashes wihout files
-lg("Number of Changes = " . ($toadd + $todel + $torep)); #+ $torep (replace);
+OC_Log::write( $appName,"$fcnt files with hashes (unchanged items)",OC_Log::DEBUG);
+OC_Log::write( $appName,$toadd . " new items to be sent",  OC_Log::DEBUG); #files wihout hashes
+OC_Log::write( $appName,$todel . " old items to be asked to remove",  OC_Log::DEBUG); #hashes wihout files
+OC_Log::write( $appName,$torep . " old items to replaced",  OC_Log::DEBUG); #hashes wihout files
+OC_Log::write( $appName,"Number of Changes = " . ($toadd + $todel + $torep),  OC_Log::DEBUG); #+ $torep (replace);
 
 #DONE: Send '<NumberOfChanges>X</NumberOfChanges>'
 $twoway .= "<NumberOfChanges>" . ($toadd + $todel + $torep) . "</NumberOfChanges>";
 
 #4.Ask to remove hashes without files (and remove hashes)
 foreach ($CFiles as $file => $hash) {
-	lg("asking to delete $file");
+	OC_Log::write( $appName,"asking to delete $file",  OC_Log::DEBUG);
 	#$twoway .= "<Delete><CmdID>$i</CmdID><Item><Source><LocURI>$file</LocURI></Source></Item></Delete>";
 	$twoway .= "<Delete><CmdID>$i</CmdID><Item><Target><LocURI>$file</LocURI></Target></Item></Delete>"; #Target/Source problem maybe here <<<<<<<<<<<<<<<<
 	remove_hash($s_dir,$file,$source);
@@ -114,11 +120,11 @@ foreach ($CFiles as $file => $hash) {
 
 #5.Ask to add files without hashes (+ hash & add them)
 foreach ($SFiles as $file => $hash) {
-	$itemdata = file_get_contents($s_dir . "/" . $file);
+	$itemdata = OC_Filesystem::file_get_contents($file);
 	#DONE: Make shure that $itemdata is free from "]]>"
 	$itemdata = str_replace("]]>", "]]]]><![CDATA[>", $itemdata);
 	#See http://en.wikipedia.org/wiki/CDATA
-	lg("asking to add $file");
+	OC_Log::write( $appName,"asking to add $file", OC_Log::DEBUG);
 	$twoway .= "<Add><CmdID>$i</CmdID>" . /*/ "<Meta><Type xmlns=\"syncml:metinf\">text/plain</Type></Meta>" ./**/ "<Item><Source><LocURI>$file</LocURI></Source><Target><LocURI>$file</LocURI></Target><Data><![CDATA[" . $itemdata . "]]></Data></Item></Add>";
 	//$STATE["hash_" . $file] = $hash;
 	write_hash($s_dir,$file,$source,$hash);
@@ -129,9 +135,9 @@ foreach ($SFiles as $file => $hash) {
 #DONE: do comparation for Replace elemets
  #for now it's removing and adding changed element
 foreach ($DFiles as $file => $hash) {
-	$itemdata = file_get_contents($s_dir . "/" . $file);
+	$itemdata = OC_Filesystem::file_get_contents($file);
 	$itemdata = str_replace("]]>", "]]]]><![CDATA[>", $itemdata);
-	lg("asking to replace $file");
+	OC_Log::write( $appName,"asking to replace $file",  OC_Log::DEBUG);
 	$twoway .= "<Replace><CmdID>$i</CmdID>" . /*/ "<Meta><Type xmlns=\"syncml:metinf\">text/plain</Type></Meta>" ./**/ "<Item><Target><LocURI>$file</LocURI></Target><Data><![CDATA[" . $itemdata . "]]></Data></Item></Replace>";
 	//$STATE["hash_" . $file] = $hash;
 	write_hash($s_dir,$file,$source,$hash);
@@ -147,8 +153,9 @@ return $twoway;
 }
 
 function do_sync(&$i,$mesgid,$auth,$lcli,$lsrv,$source) {
+    global $appName;
 #lg("do_sync(\$i,\$mesgid,\$auth,\$lcli,\$lsrv)");
-lg("do_sync(cli->$lcli, srv->$lsrv)");
+OC_Log::write( $appName,"do_sync(cli->$lcli, srv->$lsrv)",OC_Log::DEBUG);
 global $user_dir;	
 if ($auth) {
 	$s_dir = $user_dir . "/" . $lsrv;
@@ -200,7 +207,7 @@ if ($auth) {
 } else {
 	#$sync = "<Sync><CmdID>$i</CmdID><Target><LocURI>$lcli</LocURI></Target><Source><LocURI>$lsrv</LocURI></Source></Sync>"; //empty sync
 	$sync = ""; //empty sync
-	lg("User unauthenticated, but requested sync. That's weird. Should we send <Sync> at all? Nothing has been sent.");
+	OC_Log::write( $appName,"User unauthenticated, but requested sync. That's weird. Should we send <Sync> at all? Nothing has been sent.",  OC_Log::DEBUG);
 	#$sync = "";
 };
 return $sync;

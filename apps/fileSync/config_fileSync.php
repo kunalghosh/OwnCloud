@@ -1,6 +1,7 @@
 <?php
-function parse_config(&$CONFIG) {
-##parse_config() -> $CONFIG
+function parse_config(){
+        global $user;
+        global $appName;
 	global $base_dir, $do_log, $clear_log, $keep_exchange;
 	global $dbuser, $dbpass, $dbtype;
 	global $conflict_action1, $conflict_action2;
@@ -11,17 +12,17 @@ function parse_config(&$CONFIG) {
 $config = simplexml_load_file('config/config.xml');
 #$compression = $config->config->compression; #unused. should be no, yes, auto
 # but anything, except auto can refuse to work
-$base_dir = $config->config->base_dir;
+//$base_dir = $config->config->base_dir;
 if (empty($base_dir)) {
-	$basedir = getcwd();
-	lg("base_dir is empty. using $base_dir");
+	//$base_dir = getcwd();
+	OC_Log::write( $appName,"base_dir is empty. Check if the File System is initialized for the User : $user ", OC_Log::FATAL);
 };
-$do_log = $config->config->do_log;
+//$do_log = $config->config->do_log;
 if (empty($do_log)) {
 	$do_log = 1;
-	lg("do_log is not set. check config/config.xml for syntax errors");
+	OC_Log::write( $appName,"do_log is not set. check config/config.xml for syntax errors",  OC_Log::WARN);
 };
-if ($config === FALSE) lg("CONFIG DAMAGED! HOPE YOU KNOW WHAT YOU ARE DOING!");
+if ($config === FALSE) OC_Log::write( $appName,"CONFIG DAMAGED! HOPE YOU KNOW WHAT YOU ARE DOING!",  OC_Log::DEBUG);
 $clear_log = $config->config->clear_log;
 $keep_exchange = $config->config->keep_exchange;
 $dbuser = $config->config->database->dbuser; #unused

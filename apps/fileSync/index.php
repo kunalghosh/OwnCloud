@@ -2,40 +2,114 @@
 
 //ini_set('display_errors','Off');
 error_reporting(0);
-
+$debug = True;
+$appName = "fileSync";
 require_once('../../lib/base.php');
+//first get the user credentials
+$user = $_SERVER["PHP_AUTH_USER"];
+$pass = $_SERVER["PHP_AUTH_PW"];
+//Now authenticate the user
+if(!OC_User::checkPassword($user,$pass)){
+    //Failed authentication no point proceeding.
+    OC_Log::write($appName, "Failed Login with Username : ".$user." Password : ".$pass, OC_Log::ERROR);
+    exit();
+}
 
-include("logging.php");
+//include("logging.php");
 include("sync_send.php");
 include("conflicts.php");
 include("states.php");
 include("files_fileSync.php");
 include("get_response.php");
-include("config_fileSync.php");
-parse_config(); #config_fileSync.php
+//include("config_fileSync.php");
 
-lg('working. $Id$'); #what is the use of this ?
+//Now that the user is authenticated.
+//We'll initialize his File Store.
+OC_Util::setupFS($user);
+//And Other Global Variables
+$base_dir= OC_Filesystem::getMountPoint(OC_Filesystem::getRoot());//VERY VERY Impt without this the files will not be created at the right folder.
+$user_dir=$base_dir;
+echo "Base Dir $base_dir\n";
+//exit();
+$do_log = 1;//Do you want logging ?
+if($debug == True){
+    //If debug is True
+    $keep_exchange = 1;//keep the exchange files in separate in.xml , out.xml and progress.xml
+}
+else{
+    $keep_exchange = 0;//don't store exchanges in files in.xml , out.xml and progress.xml
+}
+    
+$dbuser = "";//unused
+$dbpass = "";//unused
+$dbtype = "";//unused
+/* Possible values of conflict resolution options:
+ * server   : written as "ser" : Server wins
+ * client   : written as "cli" : Client wins
+ * duplicate: written as "dup" : Old file copied to a new file with timestamp and a new file is created.
+ * delete   : written as "del" : Delete existing file with the same name.
+ * merge    : written as "mer" : Merge teh conflicting files.
+ */
 
+//always merge conflict resolution strings are lower case
+$SER = "ser";
+$CLI = "cli";
+$DUP = "dup";
+$DEL = "del";
+$MER = "mer";
+
+$conflict_action1 = $MER;
+$conflict_action2 = $DUP;
+$unrestricted = 1;//1 -> allow user creation 0 -> disallow user creation
+
+//parse_config(); #config_fileSync.php
 //Lets open our log file for debugging purposes
-if ($keep_exchange > 0) {
-	$handler = fopen("$base_dir/progress.xml", "a+");
-	$hand_rq = fopen("$base_dir/in.xml", "w");
-	$hand_rs = fopen("$base_dir/out.xml", "w");
+if ($keep_exchange > 0){
+	$hand_rq = OC_Filesystem::fopen("/in.xml", "w");
+	$hand_rs = OC_Filesystem::fopen("/out.xml", "w");
+        $handler = OC_Filesystem::fopen("/progress.xml", "a+");
+        OC_Hook::emit("OC_Filesystem","signal_post_create");
 };
-
+//var_dump(OC_Filesystem::getInternalPath("/".$user));
+//exit();
 // assign POST data to variable (comment out for debugging)
-$post_data = $HTTP_RAW_POST_DATA;
 
+$HTTP_RAW_POST_DATA = file_get_contents('php://input');
+
+if($debug == True){
+    echo "File get Contents ";
+    var_dump($HTTP_RAW_POST_DATA);
+}
+
+$post_data = $HTTP_RAW_POST_DATA;
 $ct = $_SERVER["CONTENT_TYPE"];
 
-if ($ct == "application/vnd.syncml+wbxml") { $input_type = "wbxml"; }
-	else if ($ct == "application/vnd.syncml+xml") {$input_type = "xml"; }
-	else {
+if ($ct == "application/vnd.syncml+wbxml") {
+    $input_type = "wbxml"; 
+    
+}
+else if ($ct == "application/vnd.syncml+xml") {
+    $input_type = "xml"; 
+    
+}
+else {
 		$input_type = "unknown"; //pretend that it is xml
-		//echo "<html>I only speak SyncML.</html>";
-		exit();
-	};
-lg("Recognized type: $input_type");
+                //echo "<html>I only speak SyncML.</html>";
+                //echo OC::$CONFIG_DATADIRECTORY;
+                //echo " ROOT !!------------------------";
+                //echo OC_Files::getDirectoryContent(OC::$CONFIG_DATADIRECTORY);
+                //var_dump($_SERVER);
+                //var_dump($data);
+                if ($debug == False){
+                    exit();
+                }
+                else{
+                    $message = "CONTENT_TYPE Variable is empty ! :(, searched in _SERVER\n";
+                    echo $message;
+                    OC_Log::write($appName, $message, OC_Log::DEBUG);
+                }
+};
+OC_Log::write($appName,"Recognized type: $input_type",OC_Log::DEBUG);
 
 // Extract data
 if ($input_type == 'wbxml') {
@@ -50,6 +124,7 @@ if ($keep_exchange > 0) {
 	fwrite($handler, $xmlsh);
 	fwrite($handler, "\nC-\>S\n");
 	fwrite($hand_rq, $xmlsh);
+        OC_Hook::emit("OC_Filesystem", "post_write");
 	fflush($hand_rq);
 };
 
@@ -65,108 +140,173 @@ $source_s = str_replace(str_split(':./\\&<>?*[]|'), "", $source);
 $target = $synchdr->Target->LocURI;
 $auth64 = $synchdr->Cred->Data;
 if (($mesgid == 1) and ($clear_log > 0)) {
-	if ($do_log > 0) unlink("$base_dir/log.txt");
-	lg("Log cleared due to 1st message");
+	if ($do_log > 0)    OC_Filesystem::unlink("log.txt");
+	OC_Log::write(  $appName,"Log cleared due to 1st message", OC_Log::DEBUG);
 };
 
-lg("Session: $sessid Message: $mesgid");
-lg("Source: $source");
-lg("Target: $target");
+OC_Log::write(  $appName,"Session: $sessid Message: $mesgid", OC_Log::DEBUG);
+OC_Log::write(  $appName,"Source: $source", OC_Log::DEBUG);
+OC_Log::write(  $appName,"Target: $target", OC_Log::DEBUG);
 $auth = base64_decode($auth64);
 $A = explode(':', $auth, 2);
-$user = $A[0];
-$pass = $A[1];
-unset($A);
-lg("user: $user pass: $pass");
+//echo "PostData $_SERVER[SERVER_NAME]";
+//$user = $A[0];
+//$pass = $A[1];
+//unset($A);
+$user = $_SERVER["PHP_AUTH_USER"];
+$pass = $_SERVER["PHP_AUTH_PW"];
+
+OC_Log::write(  $appName,"user: $user pass: $pass", OC_Log::DEBUG);
+if(OC_User::checkPassword($user,$pass)){
+    OC_Log::write(  $appName,"core","Correct Login!",  OC_Log::DEBUG);
+    OC_Log::write(  $appName,"Correct Login !", OC_Log::DEBUG);
+    /*
+     * $sharedFolder = "/".$user."/files";
+     * $items = OC_Share::getItemsInFolder($sharedFolder);
+     * echo " ITEMS--->";
+     * var_dump($items);    
+     * $sharedFolder = "/".$user;    
+     * $items = OC_Share::getItemsInFolder(OC_Filesystem::getInternalPath($sharedFolder));    
+     * echo " ITEMS2--->";
+     * var_dump($items);
+     * 
+     */
+    $query = OC_DB::prepare("SELECT * FROM *PREFIX*fscache  WHERE user = ?");
+    $response = $query->execute(array($user))->fetchAll();
+    //var_dump($response);
+    echo "\nFS Internals-->\n"; 
+    //var_dump(OC_Filesystem::getInternalPath("/".$user));
+    //echo $response[3]["path"];
+    //var_dump($response);
+    $path="";
+    foreach($response as $file){
+        if($file["name"]=="Useful1.txt"){
+            $path = $file["path"];
+            break;
+        }
+    }
+    //echo $path;
+    //$filesystem = new OC_Filesystem("/".$user);
+    //var_dump($filesystem->file_get_contents($response[3]["path"]));
+    //echo " ";
+    //OC_Util::setupFS($user);
+    echo "Internal Path ";
+    var_dump(OC_Filesystem::getRoot());
+    //var_dump(OC_Files::getdirectorycontent(OC_Filesystem::getInternalPath("/".$user)));
+    //var_dump(OC_Files::get(OC_Filesystem::getInternalPath("/"),"Useful1.txt"));//works
+    //$internal_path = OC_Filesystem::getInternalPath($path);
+    //echo $internal_path;
+    //OC_Filesystem::file_put_contents($internal_path, "Hello How are You!");//doesn't work
+    
+    
+    $z = OC_Filesystem::fopen("/Useful1.txt", "a");
+    fwrite($z,"Another String of Text");
+    fclose($z);
+    
+    
+}
+else{
+    OC_Log::write(  $appName,"Incorrect Login!", OC_Log::DEBUG);
+}
 /////////////////////////////////////////////////parsing user profile
-if (empty($user)) {
+if (!empty($user)) {// if we have a username
 	//$user = "anonymous";
 	##search_session($sessid) -> $user
-	$sess_f = fopen($base_dir . '/' . "sessions", "r");
-	$sess_p = fread($sess_f, filesize($base_dir . '/' . "sessions"));
-	lg("'$sess_p'");
+	$sess_f = OC_Filesystem::fopen("/sessions", "w");
+	$sess_p = fread($sess_f, OC_Filesystem::filesize("/sessions"));
+	OC_Log::write(  $appName,"'$sess_p'", OC_Log::DEBUG);
 	fclose($sess_f);
 	$sess_A = explode("\n", $sess_p);
 	foreach ($sess_A as $value) {
 		list($par_name, $par_value) = explode("=", $value, 2);
 		$par_name = trim($par_name);
 		$par_value = trim($par_value);
-		lg("$sessid == $par_value > $user = $par_name");
+		OC_Log::write(  $appName,"$sessid == $par_value > $user = $par_name", OC_Log::DEBUG);
 		if ($sessid == $par_value) $user = $par_name;
 		#$SESS[strtolower(trim($par_value))] = trim($par_name);
 	};
 	#$user = $SESS[$sessid];
 	##/search_session()
-	if (! empty($user)) lg("for session $sessid found user $user.");
-	if (empty($user)) $user = "anonymous";
+	/*if (! empty($user)) */OC_Log::write(  $appName,"for session $sessid found user $user.", OC_Log::DEBUG);
 	#unset($sess_f,$sess_p,$sess_A,$par_name,$par_value,$SESS);
 	unset($sess_f,$sess_p,$sess_A,$par_name,$par_value);
-};
-$user_dir = $base_dir . '/' . $user;
-if ((! is_dir($user_dir)) && ($unrestricted > 0)) { //DONE:and user creation is allowed
+}
+else if (empty($user)) {
+    $user = "anonymous";
+}
+//$user_dir = $base_dir . '/' . $user;
+//if ((!OC_Filesystem::is_dir($user_dir)) && ($unrestricted > 0)) { //DONE:and user creation is allowed
+//$user_dir == "/" and is always there , we should check if /profile 
+// file exists or not
+if ((!OC_Filesystem::file_exists("/profile")) && ($unrestricted > 0)) {
+
 	##mk_user($user_dir, $pass)
-	mkdir($user_dir);
-	lg("dir created: $user_dir");
-	$user_f = fopen($user_dir . '/' . "profile", "w");
+	//OC_Filesystem::mkdir($user_dir);
+	OC_Log::write($appName, "dir created: $user_dir", OC_Log::DEBUG);
+	$user_f = OC_Filesystem::fopen("/profile", "w");
 	fwrite($user_f, "password=$pass\r\n");
 	fclose($user_f);
 	##/mk_user($user_dir, $pass)
 }
 else{
-	lg("index.php - dir not created already exists - user_dir = $user_dir");
+	//OC_Log::write( $appName,"index.php - dir not created already exists - user_dir = $user_dir", OC_Log::DEBUG);
+    OC_Log::write( $appName,"profile - file not created already exists - user_dir = $user_dir", OC_Log::DEBUG);
 };
-if (! ($unrestricted > 0)) lg("user $user tried to login to restricted server");
-lg("creating USER array");
+if (! ($unrestricted > 0)) OC_Log::write( $appName,"user $user tried to login to restricted server", OC_Log::DEBUG);
+OC_Log::write( $appName,"creating USER array", OC_Log::DEBUG);
 #$USER = array();
 #$USER["password"] = "invalid"; //for empty user to unauthenticate
 
 # replace with file_load from get_responce.php
-lg("user profile: " . $user_dir . '/' . "profile");
-file_load("$user_dir/profile", $USER);
+OC_Log::write( $appName,"user profile: " . $user_dir . '/' . "profile", OC_Log::DEBUG);
+file_load("/profile", $user);
 
 function user_profile_save()
 {
+        global $appName;
 	global $USER;
 	global $user_dir;
-	$user_f = fopen($user_dir . '/' . "profile", "w");
+	$user_f = OC_Filesystem::fopen("/profile", "w");
 	foreach ($USER as $key => $val) {
 		fwrite($user_f, "$key=$val\r\n");
-		lg("$key=$val");
+		OC_Log::write( $appName,"$key=$val", OC_Log::DEBUG);
 	};
 	fclose($user_f);
-	lg("user_profile_save");
+	OC_Log::write( $appName,"user_profile_save", OC_Log::DEBUG);
 };
 
 function user_profile_add($key, $value)
 {
+        global $appName;
 	global $USER;
 	global $user_dir;
 	if (array_key_exists($key, $USER))
 	{
-		lg("key exists");
+		OC_Log::write( $appName,"key exists", OC_Log::DEBUG);
 		$USER[strtolower(trim($key))] = trim($value);
-		lg("USER[" . strtolower(trim($key)) . "] = trim($value)");
-		lg($USER[strtolower(trim($key))] . "=" . trim($value));
+		OC_Log::write( $appName,"USER[" . strtolower(trim($key)) . "] = trim($value)", OC_Log::DEBUG);
+		OC_Log::write( $appName,$USER[strtolower(trim($key))] . "=" . trim($value), OC_Log::DEBUG);
 		user_profile_save();		//DONE:writeit
 	} else {
-		lg("key not exists");
-		$user_f = fopen($user_dir . '/' . "profile", "a");
-		lg("u: $user_dir; $key=$value.");
+		OC_Log::write( $appName,"key not exists", OC_Log::DEBUG);
+		$user_f = OC_Filesystem::fopen("/profile", "a");
+		OC_Log::write( $appName,"u: $user_dir; $key=$value.", OC_Log::DEBUG);
 		fwrite($user_f, "$key=$value\r\n");
 		fclose($user_f);
 		$USER[strtolower(trim($key))] = trim($value);
 	};
 };
 function user_profile_get($key) {
+        global $appName;
 	global $USER;
 	unset($value);
-	lg(">>>>$key>>>>" . $USER[$key]);
+	OC_Log::write( $appName,">>>>$key>>>>" . $USER[$key], OC_Log::DEBUG);
 	if (array_key_exists($key, $USER)) $value = $USER[$key];
 	return $value;
 }
 
 /////////////////////////////////////////////////////////////////////
-lg("user profile parsed");
+OC_Log::write( $appName,"user profile parsed", OC_Log::DEBUG);
 //$USER["password"] - password
 //$USER["session"] - SessionID
 //$USER["passkey"] - Server provided key
@@ -181,26 +321,26 @@ $authenticated = (bool)(
 	or ($pass == user_profile_get("password"))
 );
 if ($authenticated) {
-	lg("authenticated: $authenticated");
+	OC_Log::write( $appName,"authenticated: $authenticated", OC_Log::DEBUG);
 } else {
-	lg("unauhenticated $authenticated");
+	OC_Log::write( $appName,"unauhenticated $authenticated", OC_Log::DEBUG);
 };
 //now user is authenticated
 if ($authenticated) {
 	//Transaction start should be started here
 	//TODO: make a copy of userdir till the end of transaction (and lock it)
-	lg(">>>>" . $USER["session"]);
+	OC_Log::write( $appName,">>>>" . $USER["session"], OC_Log::DEBUG);
 	user_profile_add("session", $sessid);
-	lg(">>>>" . $USER["session"]);
+	OC_Log::write( $appName,">>>>" . $USER["session"], OC_Log::DEBUG);
 	if ( (! isset($passkey)) OR ($passkey == "")) {
 		$passkey = $_SERVER["UNIQUE_ID"];
 		//as a source of random data. 24chars
 		user_profile_add("passkey", $passkey);
 	}
 	$SESSIONS = Array();
-	file_load($base_dir . "/sessions", $SESSIONS);
+	file_load("/sessions", $SESSIONS);
 	$SESSIONS[$user] = "$sessid";
-	file_save($base_dir . "/sessions", $SESSIONS);
+	file_save("/sessions", $SESSIONS);
 	#this will keep sessions file clean, but makes a race conditions situation. Sessions can be lost, when something happens between load and save.
 	#TODO: make sessions per-user. Maybe parse all users?..
 
@@ -213,7 +353,7 @@ $i = 1;
 $vera = "1"; //protocol version
 $verb = "1";
 $ver = "$vera.$verb";
-lg("acting like ver $ver");
+OC_Log::write( $appName,"acting like ver $ver", OC_Log::DEBUG);
 if (array_key_exists("HTTPS", $_SERVER)) {
 	$RespURI = $_SERVER["SCRIPT_URI"];
 } else {
@@ -221,7 +361,7 @@ if (array_key_exists("HTTPS", $_SERVER)) {
 };
 $header = "<?xml version='1.0' encoding=\"UTF-8\"?>
 <!DOCTYPE SyncML PUBLIC \"-//SYNCML//DTD SyncML $ver//EN\" \"http://www.openmobilealliance.org/tech/DTD/OMA-TS-SyncML_RepPro_DTD-V".$vera."_".$verb.".dtd\"><SyncML xmlns='SYNCML:SYNCML$ver'><SyncHdr><VerDTD>$ver</VerDTD><VerProto>SyncML/$ver</VerProto><SessionID>".$sessid."</SessionID><MsgID>".$mesgid."</MsgID><Target><LocURI>".$source."</LocURI></Target><Source><LocURI>".$target."</LocURI></Source><RespURI>" . $RespURI . "?passkey=$passkey</RespURI></SyncHdr><SyncBody>\n";
-lg("header ready. passkey=$passkey");
+OC_Log::write( $appName,"header ready. passkey=$passkey", OC_Log::DEBUG);
 
 $send = $header;
 ///*
@@ -229,16 +369,16 @@ $send = $header;
 $content = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>0</CmdRef><Cmd>SyncHdr</Cmd><TargetRef>$target</TargetRef><SourceRef>$source</SourceRef>";
 if ($authenticated) {
 	$content .= "<Data>212</Data></Status>";
-	lg("Status for SyncHdr is 212 (authenticated)");
+	OC_Log::write( $appName,"Status for SyncHdr is 212 (authenticated)", OC_Log::DEBUG);
 } else {
 	$content .= "<Chal><Meta><Format xmlns=\"syncml:metinf\">b64</Format><Type xmlns=\"syncml:metinf\">syncml:auth-basic</Type></Meta></Chal><Data>407</Data></Status>";
-	lg("Status for SyncHdr is 407 (unauthenticated)");
+	OC_Log::write( $appName,"Status for SyncHdr is 407 (unauthenticated)", OC_Log::DEBUG);
 };
 	$send .= $content;
 	$i++;
 
-lg("Parsing body");
-#if (isset($syncbod->Final)) lg("Final present");
+OC_Log::write( $appName,"Parsing body", OC_Log::DEBUG);
+#if (isset($syncbod->Final)) OC_Log::write( $appName,"Final present", OC_Log::DEBUG);
 foreach($syncbod->children() as $key => $value) {
 	$lcli = $value->Item->Source->LocURI;
 	$lsrv = $value->Item->Target->LocURI;
@@ -251,14 +391,14 @@ foreach($syncbod->children() as $key => $value) {
 	$cmdid = $value->CmdID;
 	$data = $value->Data;
 	$cmd = $value->Cmd;
-	lg("Found $key: Cli=$lcli Srv=$lsrv Cmd=$cmdid Data=$data CmdRef=$cmd");
+	OC_Log::write( $appName,"Found $key: Cli=$lcli Srv=$lsrv Cmd=$cmdid Data=$data CmdRef=$cmd", OC_Log::DEBUG);
 	switch ($key) {
 		case "Put":
 			#$send .= $put_response;
 			$data = $value->Item->Data; #override
 			$datat = $data->asXML();
 			$datas = substr($datat, 6, -7); #remove '<Data>'..
-			lg("datas: $datas");
+			OC_Log::write( $appName,"datas: $datas", OC_Log::DEBUG);
 			$send .= put_response($i,$lcli,$lsrv,$cmdid,$mesgid,$authenticated,$datas);
 			$i++;
 			break;
@@ -271,7 +411,7 @@ foreach($syncbod->children() as $key => $value) {
 			$last = $value->Item->Meta->Anchor->Last;
 			$next = $value->Item->Meta->Anchor->Next;
 			$type = $value->Data;
-			lg("Alert Last=$last; Next=$next; SourceX=$source_s");
+			OC_Log::write( $appName,"Alert Last=$last; Next=$next; SourceX=$source_s", OC_Log::DEBUG);
 			$alerts = alert_response($i,$lcli,$lsrv,$cmdid,$mesgid,$authenticated,$type,$last,$next,$source_s);
 			$send .= $alerts;
 			$i++;
@@ -285,11 +425,11 @@ foreach($syncbod->children() as $key => $value) {
 			$sync_re = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>".$cmdid."</CmdRef><Cmd>Sync</Cmd><TargetRef>$lsrv</TargetRef><SourceRef>$lcli</SourceRef><Data>200</Data></Status>";
 			$i++;
 			$send .= $sync_re;
-			if (isset($value->NumberOfChanges)) lg("NumberOfChanges: " . $value->NumberOfChanges);
+			if (isset($value->NumberOfChanges)) OC_Log::write( $appName,"NumberOfChanges: " . $value->NumberOfChanges, OC_Log::DEBUG);
 			foreach($value->children() as $skey => $svalue) {
 				$scmdid = $svalue->CmdID;
-				lg("Sync: $skey; src: $slcli");
-				lg($svalue->children());
+				OC_Log::write( $appName,"Sync: $skey; src: $slcli", OC_Log::DEBUG);
+				OC_Log::write( $appName,$svalue->children(), OC_Log::DEBUG);
 				if (in_array($skey, array("Add", "Replace", "Delete"))) {
 					foreach ($svalue->children() as $sskey => $ssvalue) {
 						if ($sskey == "Item") {
@@ -303,11 +443,11 @@ foreach($syncbod->children() as $key => $value) {
 							#Solution 2: (IMHO gives a more accurate location because it uses previously specified location (directory) that the file must be present: $lsrv
 							if(!empty($slcli)) $slcli_array = explode("/",$slcli);
 							if (empty($slsrv) && !empty($slcli)) $slsrv = $lsrv . "/" . end($slcli_array);				
-							lg("NEW SLSRV $slsrv");
-							lg("Both Must have values slcli = $slcli slsrv = $slsrv ");#if slsrv is empty then the server doesnt know where to save the file :)
+							OC_Log::write( $appName,"NEW SLSRV $slsrv", OC_Log::DEBUG);
+							OC_Log::write( $appName,"Both Must have values slcli = $slcli slsrv = $slsrv ", OC_Log::DEBUG);#if slsrv is empty then the server doesnt know where to save the file :)
 							$sdata = $ssvalue->Data;
 							$MoreData = 0;
-							lg("$key -> $skey -> Item[$slcli]");
+							OC_Log::write( $appName,"$key -> $skey -> Item[$slcli]", OC_Log::DEBUG);
 							if (isset($ssvalue->MoreData)) $MoreData = 1;
 							switch ($skey) {
 								case "Add":
@@ -334,11 +474,11 @@ foreach($syncbod->children() as $key => $value) {
 			}; //foreach($value->children()
 
 			if (isset($syncbod->Final)) {
-				lg("Final present. Doing Sync");
+				OC_Log::write( $appName,"Final present. Doing Sync", OC_Log::DEBUG);
 				$sync = do_sync($i,$mesgid,$authenticated,$lcli,$lsrv,$source_s);
 				$send .= $sync;
 			} else {
-				lg("No Final. Not last part. Sync delayed");
+				OC_Log::write( $appName,"No Final. Not last part. Sync delayed", OC_Log::DEBUG);
 				#$send .= "<Sync></Sync>";
 				//$send .= "<Alert><CmdID>$i</CmdID><Data>222</Data><Item><Data>Please send more</Data></Item></Alert>"; //can be omitted by standad is there are any data to send (in our case - statuses)
 				$i++;
@@ -351,7 +491,7 @@ foreach($syncbod->children() as $key => $value) {
 				if ($skey != "MapItem") continue;
 				$mlcli = $svalue->Source->LocURI; //cli
 				$mlsrv = $svalue->Target->LocURI; //srv
-				lg("Map $lsrv -> $lcli; $mlsrv -> $mlcli");
+				OC_Log::write( $appName,"Map $lsrv -> $lcli; $mlsrv -> $mlcli", OC_Log::DEBUG);
 				$map = map_response($i,$cmdid,$mesgid,$authenticated,$lcli,$lsrv,$mlcli,$mlsrv,$source_s);
 				$send .= $map;
 				$i++;
@@ -383,12 +523,12 @@ if ($input_type == 'wbxml') {
 	$szb = strlen($send); //SiZe Before
 	$send = wbxml_encode($send);
 	$sza = strlen($send); //buggy on unicode
-	lg("Compression " . (100*(1-$sza/$szb)) . "%. Before=$szb, after=$sza");
+	OC_Log::write( $appName,"Compression " . (100*(1-$sza/$szb)) . "%. Before=$szb, after=$sza", OC_Log::DEBUG);
 }
-lg("---------------------------------------");
+OC_Log::write( $appName,"---------------------------------------", OC_Log::DEBUG);
 echo $send;
 
-#$f=fopen("out_$mesgid.wbx", w);
+#$f=OC_Filesystem::fopen("out_$mesgid.wbx", w);
 #fwrite($f,$send);
 #fclose($f);
 

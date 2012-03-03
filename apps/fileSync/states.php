@@ -1,6 +1,7 @@
 <?php
 
 function file_load($filename, &$ARRAY) {
+        global $appName;
 	#lg("=====LOAD fn: $filename, count: " . count($ARRAY));
 	/*
 	clearstatcache(); #2 hours gone to achieve this =/
@@ -8,10 +9,10 @@ function file_load($filename, &$ARRAY) {
 	$fc = fread($ff, filesize($filename));
 	fclose($ff);
 	 */
-	$fc = file_get_contents($filename);
+	$fc = OC_Filesystem::file_get_contents($filename);
 	$fc = $fc . "\n"; #last line wont be read without this
-	lg("filesize = " . filesize($filename));
-	lg("all: $fc :lla");
+	OC_Log::write( $appName,"filesize = " . OC_Filesystem::filesize($filename),  OC_Log::DEBUG);
+	OC_Log::write( $appName,"all: $fc :lla",  OC_Log::DEBUG);
 	$fA = explode("\n", $fc);
 	foreach ($fA as $fs) { //paramname, paramvalue
 		if (empty($fs)) continue;
@@ -22,14 +23,15 @@ function file_load($filename, &$ARRAY) {
 };
 
 function file_save($filename, $ARRAY) {
-	lg("=====SAVE fn: $filename, count: " . count($ARRAY));
-	lg("all:");
-	$ff = fopen($filename, "w");
+        global $appName;
+	OC_Log::write( $appName,"=====SAVE fn: $filename, count: " . count($ARRAY),  OC_Log::DEBUG);
+	OC_Log::write( $appName,"all:",  OC_Log::DEBUG);
+	$ff = OC_Filesystem::fopen($filename, "w");
 	foreach ($ARRAY as $pn => $pv) { //paramname, paramvalue
 		if (empty($pn)) continue;
 		#if (empty($pv)) continue;
 		fwrite($ff, "$pn=$pv\r\n");
-		lg("$pn=$pv");
+		OC_Log::write( $appName,"$pn=$pv",  OC_Log::DEBUG);
 	};
 	fclose($ff);
 	#lg(":lla");

@@ -30,11 +30,13 @@ function file_save($filename, $ARRAY) {
 */
 
 function get_response ($i,$source,$cmdref,$mesgid) {
+    global $appName;
 $get_response = "<Results><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</CmdRef><Meta><Type xmlns='syncml:metinf'>application/vnd.syncml-devinf+xml</Type></Meta><Item><Source><LocURI>./devinf11</LocURI></Source><Data><DevInf xmlns=\"syncml:devinf\"><Man>Knox County</Man><Mod>Knox County SyncML Pro</Mod><OEM>Knox County</OEM><DevID>lssync001</DevID><DevTyp>Server</DevTyp><DataStore><SourceRef>./contacts</SourceRef><Rx-Pref><CTType>text/x-vcard</CTType><VerCT>2.1</VerCT></Rx-Pref><Rx><CTType>text/vcard</CTType><VerCT>3.0</VerCT></Rx><Tx-Pref><CTType>text/x-vcard</CTType><VerCT>2.1</VerCT></Tx-Pref><Tx><CTType>text/vcard</CTType><VerCT>3.0</VerCT></Tx><SyncCap><SyncType>1</SyncType><SyncType>2</SyncType><SyncType>3</SyncType><SyncType>4</SyncType><SyncType>5</SyncType><SyncType>6</SyncType></SyncCap></DataStore><CTCap><CTType>text/x-vcard</CTType><PropName>BEGIN</PropName><ValEnum>VCARD</ValEnum><PropName>END</PropName><ValEnum>VCARD</ValEnum><PropName>VERSION</PropName><ValEnum>2.1</ValEnum><PropName>N</PropName><PropName>FN</PropName><PropName>TITLE</PropName><PropName>ORG</PropName><PropName>CATEGORIES</PropName><PropName>CLASS</PropName><PropName>TEL</PropName><PropName>EMAIL</PropName><PropName>ADR</PropName><PropName>NOTE</PropName><CTType>text/vcard</CTType><PropName>BEGIN</PropName><ValEnum>VCARD</ValEnum><PropName>END</PropName><ValEnum>VCARD</ValEnum><PropName>VERSION</PropName><ValEnum>3.0</ValEnum><PropName>N</PropName><PropName>FN</PropName><PropName>TITLE</PropName><PropName>ORG</PropName><PropName>CATEGORIES</PropName><PropName>CLASS</PropName><PropName>TEL</PropName><PropName>EMAIL</PropName><PropName>ADR</PropName><PropName>NOTE</PropName></CTCap></DevInf></Data></Item></Results>\n";
 return $get_response;
 }
 
 function put_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$datas) {
+        global $appName;
 	$put_response = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</CmdRef><Cmd>Put</Cmd><SourceRef>$loc_cli</SourceRef>";
 	if ($auth) {
 		global $user_dir;
@@ -42,46 +44,47 @@ function put_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$datas) {
 		$s_dir = $user_dir;
 		$f_state = $user_dir . "/" . $loc_srv . ".state";
 		#lg("userdir: $user_dir; sdir: $s_dir; last: $f_state");
-		if (! is_dir($s_dir)) mkdir($s_dir);
+		if (!OC_Filesystem::is_dir($s_dir)) OC_Filesystem::mkdir($s_dir);
 		#global $STATE;
 		#file_load($f_state, $STATE);
-		$ff = fopen("$user_dir/$loc_cli", "w");
+		$ff = OC_Filesystem::fopen("$loc_cli", "w");
 		fwrite($ff, $datas);
 		fclose($ff);
-		lg("file $loc_cli written in $user_dir");
+		OC_Log::write( $appName,"file $loc_cli written in $user_dir",  OC_Log::DEBUG);
 		$put_response .= "<Data>200</Data></Status>\n";
 		#lg("Status for put is 200 (ok)");
 		//if not authenticated, response code should be 401;
 	} else {
 		$put_response .= "<Data>401</Data></Status>\n";
-		lg("Status for put is 401 (unauthenticated)");
+		OC_Log::write( $appName,"Status for put is 401 (unauthenticated)",  OC_Log::DEBUG);
 	};
 return $put_response;
 }
 
 function alert_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$type,$rlast,$rnext,$source) {
+        global $appName;
 	if ($auth) {
 		global $user_dir;
 		#$s_dir = $user_dir . "/" . $loc_srv;
 		$s_dir = $user_dir;
 		$f_state = $user_dir . "/" . $loc_srv . "_" . $source . ".state";
-		lg("userdir: $user_dir; sdir: $s_dir; last: $f_state");
-		if (! is_dir($s_dir)) mkdir($s_dir);
+		OC_Log::write( $appName,"userdir: $user_dir; sdir: $s_dir; last: $f_state",  OC_Log::DEBUG);
+		if (! OC_Filesystem::is_dir($s_dir)) OC_Filesystem::mkdir($s_dir);
 		#global $STATE; #what for?.. commented out
 		//if local last = remote_last then do 200 (normal sync)
 		//otherwise do 508 (slow sync)
 		$start = microtime(true);
 		if (in_array($type, Array("201", "203", "205"))) {
-			lg("slow sync requested -> discarding state");
-			unlink($f_state); #slow sync -> discard state
+			OC_Log::write( $appName,"slow sync requested -> discarding state",  OC_Log::DEBUG);
+			OC_Filesystem::unlink($f_state); #slow sync -> discard state
 		};
 		unset($STATE);
 		$STATE = Array();
 		file_load($f_state, $STATE);
 		$end = microtime(true);
-		lg("status file loaded in " . ($end - $start) . "ms");
+		OC_Log::write( $appName,"status file loaded in " . ($end - $start) . "ms",  OC_Log::DEBUG);
 		//last/next, local/remote, old/new - 3 dimensions, 8 variables
-		lg("preparing anchors");
+		OC_Log::write( $appName,"preparing anchors",  OC_Log::DEBUG);
 		$oloclast = $STATE["new_local_last"];
 		$olocnext = $STATE["new_local_next"];
 		$oremlast = $STATE["new_remote_last"];
@@ -101,12 +104,12 @@ function alert_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$type,$rlast,
 		file_save($f_state, $STATE);
 		#$end = microtime(true);
 		#lg("status file saved in " . ($end - $start) . "ms");
-		lg("remote = $nremlast; local = $oremnext");
+		OC_Log::write( $appName,"remote = $nremlast; local = $oremnext",  OC_Log::DEBUG);
 		if (($nremlast == $oremnext) AND ($nremlast != "0")) {
 			$statusdata = "200"; #normal sync
 			#$type = "200"; #Hangs devices
 			#201???
-			lg("anchors match (normal sync pending)");
+			OC_Log::write( $appName,"anchors match (normal sync pending)",  OC_Log::DEBUG);
 		} else {
 			$statusdata = "508"; #slow sync
 			//$type = "201";
@@ -114,11 +117,11 @@ function alert_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$type,$rlast,
 			if (in_array($type, Array("200", "202", "204"))) {
 				$type = $type + 1;
 			};
-			lg("anchors mismatch (slow sync pending)");
+			OC_Log::write( $appName,"anchors mismatch (slow sync pending)",  OC_Log::DEBUG);
 		};
 		if (in_array($type, Array("201", "203", "205"))) {
 		//if ($type == "201") {
-			lg("slow sync required (anchors mismatch) -> discarding state");
+			OC_Log::write( $appName,"slow sync required (anchors mismatch) -> discarding state",  OC_Log::DEBUG);
 			unlink($f_state); #slow sync -> discard state
 			#mapping will be lost!
 		};
@@ -134,20 +137,21 @@ function alert_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$type,$rlast,
 		$STATE["old_local_last"] = $oloclast;
 		$STATE["old_local_next"] = $olocnext;
 		$STATE["type"] = $type; #in Sync we need to know it
-		lg("anchors ready. saving state");
+		OC_Log::write( $appName,"anchors ready. saving state",  OC_Log::DEBUG);
 		file_save($f_state, $STATE);
 
 		$alert_response = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</CmdRef><Cmd>Alert</Cmd><TargetRef>$loc_srv</TargetRef><SourceRef>$loc_cli</SourceRef><Data>$statusdata</Data>" . "<Item><Data><Anchor xmlns=\"syncml:metinf\"><Next>$nremnext</Next></Anchor></Data></Item>" . "</Status>";
 		$alert_response .= "<Alert><CmdID>".($i+1)."</CmdID><Item><Target><LocURI>$loc_cli</LocURI></Target><Source><LocURI>$loc_srv</LocURI></Source><Meta><Anchor xmlns=\"syncml:metinf\"><Last>$nloclast</Last><Next>$nlocnext</Next></Anchor></Meta></Item><Data>$type</Data></Alert>\n";
-		lg("Answer = $statusdata; Sync type = $type");
+		OC_Log::write( $appName,"Answer = $statusdata; Sync type = $type",  OC_Log::DEBUG);
 	} else {
 		$alert_response = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</CmdRef><Cmd>Alert</Cmd><TargetRef>$loc_srv</TargetRef><SourceRef>$loc_cli</SourceRef><Data>401</Data></Status>\n";
-		lg("Answer = 401");
+		OC_Log::write( $appName,"Answer = 401",  OC_Log::DEBUG);
 	};
 return $alert_response;
 }
 
 function status_response($i,$comdref,$mesgid) {
+        global $appName;
 	
 	$stat = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</CmdRef><Cmd>Alert</Cmd><TargetRef>./contacts</TargetRef><SourceRef>contacts</SourceRef><Data>200</Data><Item><Data><Anchor xmlns=\"syncml:metinf\"><Last>20050629T132132Z</Last><Next>20050629T154536Z</Next></Anchor></Data></Item></Status>\n";
 	//don't return anything
@@ -184,6 +188,7 @@ file_save($f_state, $STATE);
 /////////////////////////////////////////////////////////////////
 
 function add_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$source,$MoreData) {
+    global $appName;
 #same as replace_contact
 #actually, documentation says that devices can use Replace instead of Add and they do.
 global $user_dir;	
@@ -193,28 +198,28 @@ if ($auth) {
 	$s_dir = $user_dir;
 	if ($MoreData == 1)
 	{
-		lg("incomplete item. buffering in $item.tmp");
-		$ftmp = fopen($s_dir . "/" . $item . ".tmp", "a");
+		OC_Log::write( $appName,"incomplete item. buffering in $item.tmp",  OC_Log::DEBUG);
+		$ftmp = OC_Filesystem::fopen($item . ".tmp", "a");
 		fwrite($ftmp, $data);
 		fclose($ftmp);
 		$result = "213"; //"Chunked item accepted and buffered" (c)
 		//Damn typo in spec's
 	} else {
-		$tmpfn = $s_dir . "/" . $item . ".tmp";
-		if (file_exists($tmpfn))
+		$tmpfn = "/" . $item . ".tmp";
+		if (OC_Filesystem::file_exists($tmpfn))
 		{
-			lg("item concatenated from $item.tmp");
-			$ftmp = fopen($tmpfn, "r");
+			OC_Log::write( $appName,"item concatenated from $item.tmp",  OC_Log::DEBUG);
+			$ftmp = OC_Filesystem::fopen($tmpfn, "r");
 			$data = fread($ftmp, filesize($tmpfn)) . $data;
 			fclose($ftmp);
-			if (! unlink($tmpfn)) lg("error: $item.tmp is not deleted!");
+			if (! unlink($tmpfn)) OC_Log::write( $appName,"error: $item.tmp is not deleted!",  OC_Log::DEBUG);
 			//there should be some size check
 			#proceed normal operation (as if there were no split)
 		};
 		#if (file_exists($s_dir . "/" . $item)) {
 		if (exists_item($s_dir,$item,$source)) {
 			$result = "418"; #already exists
-			lg($s_dir . "/" . $item . " already exists");
+			OC_Log::write( $appName,$s_dir . "/" . $item . " already exists",  OC_Log::DEBUG);
 		} else {
 			new_item($s_dir,$item,$data,$source);
 		};
@@ -227,33 +232,34 @@ return $add;
 }
 
 function replace_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$source,$MoreData) {
+    global $appName;
 // replace_contact($i,$svalue->CmdID,$mesgid,$authenticated,$lcli,$lsrv,$svalue->Item->Source->LocURI);	
 // replace_contact($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli,$sdata);
 global $user_dir;	
 if ($auth) {
-	lg("FUNCTION: REPLACE_CONTACT in files_fileSync.php item = $item");
+	OC_Log::write( $appName,"FUNCTION: REPLACE_CONTACT in files_fileSync.php item = $item",  OC_Log::DEBUG);
 	$result = "200";
 	#$s_dir = $user_dir . "/" . $lsrv;
 	$s_dir = $user_dir;
 	$f_state = $s_dir . "_" . $source . ".state";
 	if ($MoreData == 1)
 	{
-		lg("incomplete item. buffering in $item.tmp");
-		$ftmp = fopen($s_dir . "/" . $item . ".tmp", "a");
+		OC_Log::write( $appName,"incomplete item. buffering in $item.tmp",  OC_Log::DEBUG);
+		$ftmp = OC_Filesystem::fopen("/" . $item . ".tmp", "a");
 		fwrite($ftmp, $data);
 		fclose($ftmp);
 		$result = "213"; //"Chunked item accepted and buffered" (c)
 		//Damn typo in spec's
 	} else {
 		$tmpfn = $s_dir . "/" . $item . ".tmp";
-		lg("REPLACE CONTACT ---- $tmpfn");
-		if (file_exists($tmpfn))
+		OC_Log::write( $appName,"REPLACE CONTACT ---- $tmpfn",  OC_Log::DEBUG);
+		if (OC_Filesystem::file_exists($tmpfn))
 		{
-			lg("item concatenated from $item.tmp");
-			$ftmp = fopen($tmpfn, "r");
-			$data = fread($ftmp, filesize($tmpfn)) . $data;
+			OC_Log::write( $appName,"item concatenated from $item.tmp",  OC_Log::DEBUG);
+			$ftmp = OC_Filesystem::fopen($tmpfn, "r");
+			$data = fread($ftmp, OC_Filesystem::filesize($tmpfn)) . $data;
 			fclose($ftmp);
-			if (! unlink($tmpfn)) lg("error: $item.tmp is not deleted!");
+			if (! OC_Filesystem::unlink($tmpfn)) OC_Log::write( $appName,"error: $item.tmp is not deleted!",  OC_Log::DEBUG);
 			//there should be some size check
 			#proceed normal operation (as if there were no split)
 		};
@@ -271,7 +277,7 @@ if ($auth) {
 		//if (file_exists("$s_dir/$item")) $file_hash = md5_file("$s_dir/$item");
 		if (exists_item($s_dir,$item,$source)) $file_hash = md5(get_item($s_dir,$item,$source));
 		if ((! empty($saved_hash)) AND (! empty($file_hash)) AND ($saved_hash != $file_hash)) { #item changed
-			lg("saved: $saved_hash, file: $file_hash. Item changed. Conflict");
+			OC_Log::write( $appName,"saved: $saved_hash, file: $file_hash. Item changed. Conflict",  OC_Log::DEBUG);
 			$result = conflict_solve(1,$s_dir,$item,$data,$source);
 			#conflicts.php
 		} else {
@@ -294,6 +300,7 @@ return $replace;
 }
 
 function delete_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$source) {
+    global $appName;
 //($i,$scmdid,$mesgid,$authenticated,$lcli,$lsrv,$slcli)
 global $user_dir;	
 if ($auth) {
@@ -304,7 +311,7 @@ if ($auth) {
 	//if (! file_exists($s_dir . "/" . $item)) {
 	if (! exists_item($s_dir,$item,$source)) {
 		$result = "211"; #Item not deleted
-		lg("DELETING :" . $s_dir . "/" . $item . " doesn't exist ");
+		OC_Log::write( $appName,"DELETING :" . $s_dir . "/" . $item . " doesn't exist ",  OC_Log::DEBUG);
 	} else {
 		remove_item($s_dir,$item,$source);
 	};
@@ -316,6 +323,7 @@ return $delete;
 }
 
 function map_response($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$mlcli,$mlsrv,$source) {
+    global $appName;
 //$i,$cmdid,$mesgid,$authenticated,$lcli,$lsrv,$mlcli,$mlsrv
 global $user_dir;	
 if ($auth) {

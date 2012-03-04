@@ -6,73 +6,11 @@ $debug = True;
 $appName = "fileSync";
 require_once('../../lib/base.php');
 //first get the user credentials
-$user = $_SERVER["PHP_AUTH_USER"];
+/*$user = $_SERVER["PHP_AUTH_USER"];
 $pass = $_SERVER["PHP_AUTH_PW"];
-//Now authenticate the user
-if(!OC_User::checkPassword($user,$pass)){
-    //Failed authentication no point proceeding.
-    OC_Log::write($appName, "Failed Login with Username : ".$user." Password : ".$pass, OC_Log::ERROR);
-    exit();
-}
-
-//include("logging.php");
-include("sync_send.php");
-include("conflicts.php");
-include("states.php");
-include("files_fileSync.php");
-include("get_response.php");
-//include("config_fileSync.php");
-
-//Now that the user is authenticated.
-//We'll initialize his File Store.
-OC_Util::setupFS($user);
-//And Other Global Variables
-$base_dir= OC_Filesystem::getMountPoint(OC_Filesystem::getRoot());//VERY VERY Impt without this the files will not be created at the right folder.
-$user_dir=$base_dir;
-echo "Base Dir $base_dir\n";
-//exit();
-$do_log = 1;//Do you want logging ?
-if($debug == True){
-    //If debug is True
-    $keep_exchange = 1;//keep the exchange files in separate in.xml , out.xml and progress.xml
-}
-else{
-    $keep_exchange = 0;//don't store exchanges in files in.xml , out.xml and progress.xml
-}
-    
-$dbuser = "";//unused
-$dbpass = "";//unused
-$dbtype = "";//unused
-/* Possible values of conflict resolution options:
- * server   : written as "ser" : Server wins
- * client   : written as "cli" : Client wins
- * duplicate: written as "dup" : Old file copied to a new file with timestamp and a new file is created.
- * delete   : written as "del" : Delete existing file with the same name.
- * merge    : written as "mer" : Merge teh conflicting files.
+ * With SyncML this doesn't work, the authentication is
+ * sent along with the POST body
  */
-
-//always merge conflict resolution strings are lower case
-$SER = "ser";
-$CLI = "cli";
-$DUP = "dup";
-$DEL = "del";
-$MER = "mer";
-
-$conflict_action1 = $MER;
-$conflict_action2 = $DUP;
-$unrestricted = 1;//1 -> allow user creation 0 -> disallow user creation
-
-//parse_config(); #config_fileSync.php
-//Lets open our log file for debugging purposes
-if ($keep_exchange > 0){
-	$hand_rq = OC_Filesystem::fopen("/in.xml", "w");
-	$hand_rs = OC_Filesystem::fopen("/out.xml", "w");
-        $handler = OC_Filesystem::fopen("/progress.xml", "a+");
-        OC_Hook::emit("OC_Filesystem","signal_post_create");
-};
-//var_dump(OC_Filesystem::getInternalPath("/".$user));
-//exit();
-// assign POST data to variable (comment out for debugging)
 
 $HTTP_RAW_POST_DATA = file_get_contents('php://input');
 
@@ -119,14 +57,6 @@ if ($input_type == 'wbxml') {
 	$xmlsh = $post_data;
 	header("Content-Type: application/vnd.syncml+xml; charset=UTF-8");
 }
-if ($keep_exchange > 0) {
-	fwrite($handler, "\nC-\>S\n");
-	fwrite($handler, $xmlsh);
-	fwrite($handler, "\nC-\>S\n");
-	fwrite($hand_rq, $xmlsh);
-        OC_Hook::emit("OC_Filesystem", "post_write");
-	fflush($hand_rq);
-};
 
 // Load our response into a simplexml object
 $xmls = simplexml_load_string($xmlsh);
@@ -139,6 +69,94 @@ $source = $synchdr->Source->LocURI;
 $source_s = str_replace(str_split(':./\\&<>?*[]|'), "", $source);
 $target = $synchdr->Target->LocURI;
 $auth64 = $synchdr->Cred->Data;
+$auth = base64_decode($auth64);
+$A = explode(':', $auth, 2);
+
+$user = $A[0];
+$pass = $A[1];
+unset($A);
+
+//Now authenticate the user
+if(!OC_User::checkPassword($user,$pass)){
+    //Failed authentication no point proceeding.
+    OC_Log::write($appName, "Failed Login with Username : ".$user." Password : ".$pass, OC_Log::ERROR);
+    exit();
+}
+
+//include("logging.php");
+include("sync_send.php");
+include("conflicts.php");
+include("states.php");
+include("files_fileSync.php");
+include("get_response.php");
+//include("config_fileSync.php");
+
+//Now that the user is authenticated.
+//We'll initialize his File Store.
+OC_Util::setupFS($user);
+//And Other Global Variables
+$base_dir= OC_Filesystem::getMountPoint(OC_Filesystem::getRoot());//VERY VERY Impt without this the files will not be created at the right folder.
+$user_dir=$base_dir;
+echo "Base Dir $base_dir\n";
+//exit();
+$do_log = 1;//Do you want logging ?
+if($debug == True){
+    //If debug is True
+    $keep_exchange = 1;//keep the exchange files in separate in.xml , out.xml and progress.xml
+}
+else{
+    $keep_exchange = 0;//don't store exchanges in files in.xml , out.xml and progress.xml
+}
+/*    
+$dbuser = "";//unused
+$dbpass = "";//unused
+$dbtype = "";//unused
+*/
+
+/* Possible values of conflict resolution options:
+ * server   : written as "ser" : Server wins
+ * client   : written as "cli" : Client wins
+ * duplicate: written as "dup" : Old file copied to a new file with timestamp and a new file is created.
+ * delete   : written as "del" : Delete existing file with the same name.
+ * merge    : written as "mer" : Merge teh conflicting files.
+ */
+
+//always merge conflict resolution strings are lower case
+$SER = "ser";
+$CLI = "cli";
+$DUP = "dup";
+$DEL = "del";
+$MER = "mer";
+
+$conflict_action1 = $MER;
+$conflict_action2 = $DUP;
+$unrestricted = 1;//1 -> allow user creation 0 -> disallow user creation
+
+//parse_config(); #config_fileSync.php
+//Lets open our log file for debugging purposes
+if ($keep_exchange > 0){
+	$hand_rq = OC_Filesystem::fopen("/in.xml", "w");
+	$hand_rs = OC_Filesystem::fopen("/out.xml", "w");
+        $handler = OC_Filesystem::fopen("/progress.xml", "a+");
+        OC_Hook::emit("OC_Filesystem","signal_post_create");
+};
+//var_dump(OC_Filesystem::getInternalPath("/".$user));
+//exit();
+// assign POST data to variable (comment out for debugging)
+
+//$HTTP_RAW_POST_DATA = file_get_contents('php://input');
+
+
+if ($keep_exchange > 0) {
+	fwrite($handler, "\nC-\>S\n");
+	fwrite($handler, $xmlsh);
+	fwrite($handler, "\nC-\>S\n");
+	fwrite($hand_rq, $xmlsh);
+        OC_Hook::emit("OC_Filesystem", "post_write");
+	fflush($hand_rq);
+};
+
+
 if (($mesgid == 1) and ($clear_log > 0)) {
 	if ($do_log > 0)    OC_Filesystem::unlink("log.txt");
 	OC_Log::write(  $appName,"Log cleared due to 1st message", OC_Log::DEBUG);
@@ -147,15 +165,12 @@ if (($mesgid == 1) and ($clear_log > 0)) {
 OC_Log::write(  $appName,"Session: $sessid Message: $mesgid", OC_Log::DEBUG);
 OC_Log::write(  $appName,"Source: $source", OC_Log::DEBUG);
 OC_Log::write(  $appName,"Target: $target", OC_Log::DEBUG);
-$auth = base64_decode($auth64);
-$A = explode(':', $auth, 2);
-//echo "PostData $_SERVER[SERVER_NAME]";
-//$user = $A[0];
-//$pass = $A[1];
-//unset($A);
+
+/* Doesn't work wit SyncML the authentication data is present in the 
+ * POST body needs to be parsed out.
 $user = $_SERVER["PHP_AUTH_USER"];
 $pass = $_SERVER["PHP_AUTH_PW"];
-
+*/
 OC_Log::write(  $appName,"user: $user pass: $pass", OC_Log::DEBUG);
 if(OC_User::checkPassword($user,$pass)){
     OC_Log::write(  $appName,"core","Correct Login!",  OC_Log::DEBUG);

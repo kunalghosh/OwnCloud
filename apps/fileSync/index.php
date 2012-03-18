@@ -104,6 +104,8 @@ if(!empty($A[0]) and !empty($A[1])){
         //exit();//does work with multipart data
     } 
     OC_Log::write($appName, "Logged in with Username : ".$user." Password : ".$pass, OC_Log::DEBUG);
+    $query = OC_DB::prepare("INSERT INTO *PREFIX*fileSync VALUES(?,?,?,?)");
+    $query->execute(array($sessid,$user,$sessid,$pass));//the primary key is the session id
     unset($A);
 }
 
@@ -236,6 +238,7 @@ else if (empty($user)) {
 if (empty($user)) {
 	//$user = "anonymous";
 	##search_session($sessid) -> $user
+    /*
 	$sess_f = OC_Filesystem::fopen("/sessions", "r");
 	$sess_p = fread($sess_f, OC_Filesystem::filesize("/sessions"));
 	#lg("'$sess_p'");
@@ -251,6 +254,16 @@ if (empty($user)) {
 	};
 	#$user = $SESS[$sessid];
 	##/search_session()
+     * 
+     */
+        $query = OC_DB::prepare("select ? from *PREFIX*fileSync where sessionid=?");
+        $user = $query->execute(array("username",$sessid));
+        $USER["username"] = $user;
+        
+        OC_Log::write($appName, "SESSION HAS BEGUN Username : ".$user, OC_Log::DEBUG);
+        $base_dir= OC_Filesystem::getMountPoint(OC_Filesystem::getRoot());//VERY VERY Impt without this the files will not be created at the right folder.
+        $user_dir=$base_dir;
+        
 	if (! empty($user)){
             OC_Log::write(  $appName,"for session $sessid found user $user.", OC_Log::DEBUG);
         }
@@ -258,7 +271,10 @@ if (empty($user)) {
             $user = "anonymous";
         }
 	#unset($sess_f,$sess_p,$sess_A,$par_name,$par_value,$SESS);
+        /*
 	unset($sess_f,$sess_p,$sess_A,$par_name,$par_value);
+         * 
+         */
 };
 //$user_dir = $base_dir . '/' . $user;
 //if ((!OC_Filesystem::is_dir($user_dir)) && ($unrestricted > 0)) { //DONE:and user creation is allowed

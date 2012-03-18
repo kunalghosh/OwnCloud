@@ -1,13 +1,13 @@
 <?php
 
-//ini_set('display_errors','Off');
 error_reporting(0);
-$debug = True;
+$debug = False;
 $appName = "fileSync";
 require_once('../../lib/base.php');
 //first get the user credentials
-/*$user = $_SERVER["PHP_AUTH_USER"];
-$pass = $_SERVER["PHP_AUTH_PW"];
+/* 
+ * $user = $_SERVER["PHP_AUTH_USER"];
+ * $pass = $_SERVER["PHP_AUTH_PW"];
  * With SyncML this doesn't work, the authentication is
  * sent along with the POST body
  */
@@ -72,16 +72,42 @@ $auth64 = $synchdr->Cred->Data;
 $auth = base64_decode($auth64);
 $A = explode(':', $auth, 2);
 
-$user = $A[0];
-$pass = $A[1];
-unset($A);
-
-//Now authenticate the user
-if(!OC_User::checkPassword($user,$pass)){
-    //Failed authentication no point proceeding.
-    OC_Log::write($appName, "Failed Login with Username : ".$user." Password : ".$pass, OC_Log::ERROR);
-    exit();
+if($debug == True){
+    var_dump($A);
 }
+
+    OC_Log::write( $appName,"creating USER array", OC_Log::DEBUG);
+    $USER = array();
+
+if(!empty($A[0])){
+    $user = $A[0];
+    $USER["password"] = "invalid"; //for empty user to unauthenticate
+    $USER["username"] = $user;
+    OC_Util::setupFS($user);
+
+}
+else{
+    OC_Log::write($appName, "The UserName A[0] is empty", OC_Log::ERROR);
+}
+if(!empty($A[1])){
+    $pass = $A[1];
+    $USER["password"] = $pass;
+}
+else{
+    OC_Log::write($appName, "The Password A[1] is empty", OC_Log::ERROR);
+}
+if(!empty($A[0]) and !empty($A[1])){
+    //Now authenticate the user
+    if(!OC_User::checkPassword($user,$pass)){
+        //Failed authentication no point proceeding.
+        OC_Log::write($appName, "Failed Login with Username : ".$user." Password : ".$pass, OC_Log::ERROR);
+        //exit();//does work with multipart data
+    } 
+    OC_Log::write($appName, "Logged in with Username : ".$user." Password : ".$pass, OC_Log::DEBUG);
+    unset($A);
+}
+
+
 
 //include("logging.php");
 include("sync_send.php");
@@ -93,11 +119,15 @@ include("get_response.php");
 
 //Now that the user is authenticated.
 //We'll initialize his File Store.
-OC_Util::setupFS($user);
+
 //And Other Global Variables
+OC_Log::write($appName, "Username : ".$user, OC_Log::DEBUG);
 $base_dir= OC_Filesystem::getMountPoint(OC_Filesystem::getRoot());//VERY VERY Impt without this the files will not be created at the right folder.
 $user_dir=$base_dir;
-echo "Base Dir $base_dir\n";
+
+if($debug == True){
+    echo "Base Dir $base_dir\n";
+}
 //exit();
 $do_log = 1;//Do you want logging ?
 if($debug == True){
@@ -130,7 +160,8 @@ $MER = "mer";
 
 $conflict_action1 = $MER;
 $conflict_action2 = $DUP;
-$unrestricted = 1;//1 -> allow user creation 0 -> disallow user creation
+$unrestricted = 0;//1 -> allow user creation 0 -> disallow user creation
+$clear_log=0;
 
 //parse_config(); #config_fileSync.php
 //Lets open our log file for debugging purposes
@@ -140,12 +171,6 @@ if ($keep_exchange > 0){
         $handler = OC_Filesystem::fopen("/progress.xml", "a+");
         OC_Hook::emit("OC_Filesystem","signal_post_create");
 };
-//var_dump(OC_Filesystem::getInternalPath("/".$user));
-//exit();
-// assign POST data to variable (comment out for debugging)
-
-//$HTTP_RAW_POST_DATA = file_get_contents('php://input');
-
 
 if ($keep_exchange > 0) {
 	fwrite($handler, "\nC-\>S\n");
@@ -172,63 +197,20 @@ $user = $_SERVER["PHP_AUTH_USER"];
 $pass = $_SERVER["PHP_AUTH_PW"];
 */
 OC_Log::write(  $appName,"user: $user pass: $pass", OC_Log::DEBUG);
-if(OC_User::checkPassword($user,$pass)){
-    OC_Log::write(  $appName,"core","Correct Login!",  OC_Log::DEBUG);
-    OC_Log::write(  $appName,"Correct Login !", OC_Log::DEBUG);
-    /*
-     * $sharedFolder = "/".$user."/files";
-     * $items = OC_Share::getItemsInFolder($sharedFolder);
-     * echo " ITEMS--->";
-     * var_dump($items);    
-     * $sharedFolder = "/".$user;    
-     * $items = OC_Share::getItemsInFolder(OC_Filesystem::getInternalPath($sharedFolder));    
-     * echo " ITEMS2--->";
-     * var_dump($items);
-     * 
-     */
-    $query = OC_DB::prepare("SELECT * FROM *PREFIX*fscache  WHERE user = ?");
-    $response = $query->execute(array($user))->fetchAll();
-    //var_dump($response);
-    echo "\nFS Internals-->\n"; 
-    //var_dump(OC_Filesystem::getInternalPath("/".$user));
-    //echo $response[3]["path"];
-    //var_dump($response);
-    $path="";
-    foreach($response as $file){
-        if($file["name"]=="Useful1.txt"){
-            $path = $file["path"];
-            break;
-        }
-    }
-    //echo $path;
-    //$filesystem = new OC_Filesystem("/".$user);
-    //var_dump($filesystem->file_get_contents($response[3]["path"]));
-    //echo " ";
-    //OC_Util::setupFS($user);
-    echo "Internal Path ";
-    var_dump(OC_Filesystem::getRoot());
-    //var_dump(OC_Files::getdirectorycontent(OC_Filesystem::getInternalPath("/".$user)));
-    //var_dump(OC_Files::get(OC_Filesystem::getInternalPath("/"),"Useful1.txt"));//works
-    //$internal_path = OC_Filesystem::getInternalPath($path);
-    //echo $internal_path;
-    //OC_Filesystem::file_put_contents($internal_path, "Hello How are You!");//doesn't work
-    
-    
-    $z = OC_Filesystem::fopen("/Useful1.txt", "a");
-    fwrite($z,"Another String of Text");
-    fclose($z);
-    
-    
-}
-else{
-    OC_Log::write(  $appName,"Incorrect Login!", OC_Log::DEBUG);
-}
+
 /////////////////////////////////////////////////parsing user profile
-if (!empty($user)) {// if we have a username
+/*if (!empty($user)) {// if we have a username
 	//$user = "anonymous";
 	##search_session($sessid) -> $user
-	$sess_f = OC_Filesystem::fopen("/sessions", "w");
-	$sess_p = fread($sess_f, OC_Filesystem::filesize("/sessions"));
+	
+            if(OC_Filesystem::filesize("/sessions") != 0){
+                $sess_f = OC_Filesystem::fopen("/sessions", "r");
+                $sess_p = fread($sess_f, OC_Filesystem::filesize("/sessions"));
+            }
+            else{
+                $sess_f = OC_Filesystem::fopen("/sessions", "w");
+                $sess_p = fread($sess_f);
+            }
 	OC_Log::write(  $appName,"'$sess_p'", OC_Log::DEBUG);
 	fclose($sess_f);
 	$sess_A = explode("\n", $sess_p);
@@ -242,13 +224,42 @@ if (!empty($user)) {// if we have a username
 	};
 	#$user = $SESS[$sessid];
 	##/search_session()
-	/*if (! empty($user)) */OC_Log::write(  $appName,"for session $sessid found user $user.", OC_Log::DEBUG);
+	//if (! empty($user))
+        OC_Log::write(  $appName,"for session $sessid found user $user.", OC_Log::DEBUG);
 	#unset($sess_f,$sess_p,$sess_A,$par_name,$par_value,$SESS);
-	unset($sess_f,$sess_p,$sess_A,$par_name,$par_value);
+    	unset($sess_f,$sess_p,$sess_A,$par_name,$par_value);
 }
 else if (empty($user)) {
     $user = "anonymous";
 }
+*/
+if (empty($user)) {
+	//$user = "anonymous";
+	##search_session($sessid) -> $user
+	$sess_f = OC_Filesystem::fopen("/sessions", "r");
+	$sess_p = fread($sess_f, OC_Filesystem::filesize("/sessions"));
+	#lg("'$sess_p'");
+	fclose($sess_f);
+	$sess_A = explode("\n", $sess_p);
+	foreach ($sess_A as $value) {
+		list($par_name, $par_value) = explode("=", $value, 2);
+		$par_name = trim($par_name);
+		$par_value = trim($par_value);
+		#lg("$sessid == $par_value > $user = $par_name");
+		if ($sessid == $par_value) $user = $par_name;
+		#$SESS[strtolower(trim($par_value))] = trim($par_name);
+	};
+	#$user = $SESS[$sessid];
+	##/search_session()
+	if (! empty($user)){
+            OC_Log::write(  $appName,"for session $sessid found user $user.", OC_Log::DEBUG);
+        }
+	if (empty($user)){
+            $user = "anonymous";
+        }
+	#unset($sess_f,$sess_p,$sess_A,$par_name,$par_value,$SESS);
+	unset($sess_f,$sess_p,$sess_A,$par_name,$par_value);
+};
 //$user_dir = $base_dir . '/' . $user;
 //if ((!OC_Filesystem::is_dir($user_dir)) && ($unrestricted > 0)) { //DONE:and user creation is allowed
 //$user_dir == "/" and is always there , we should check if /profile 
@@ -267,13 +278,13 @@ else{
 	//OC_Log::write( $appName,"index.php - dir not created already exists - user_dir = $user_dir", OC_Log::DEBUG);
     OC_Log::write( $appName,"profile - file not created already exists - user_dir = $user_dir", OC_Log::DEBUG);
 };
-if (! ($unrestricted > 0)) OC_Log::write( $appName,"user $user tried to login to restricted server", OC_Log::DEBUG);
-OC_Log::write( $appName,"creating USER array", OC_Log::DEBUG);
-#$USER = array();
-#$USER["password"] = "invalid"; //for empty user to unauthenticate
+if (! ($unrestricted > 0)){
+    OC_Log::write( $appName,"user $user tried to login to restricted server", OC_Log::DEBUG);
+}
+
 
 # replace with file_load from get_responce.php
-OC_Log::write( $appName,"user profile: " . $user_dir . '/' . "profile", OC_Log::DEBUG);
+OC_Log::write( $appName,"user profile: /profile", OC_Log::DEBUG);
 file_load("/profile", $user);
 
 function user_profile_save()
@@ -285,7 +296,7 @@ function user_profile_save()
 	foreach ($USER as $key => $val) {
 		fwrite($user_f, "$key=$val\r\n");
 		OC_Log::write( $appName,"$key=$val", OC_Log::DEBUG);
-	};
+	};        
 	fclose($user_f);
 	OC_Log::write( $appName,"user_profile_save", OC_Log::DEBUG);
 };
@@ -316,7 +327,9 @@ function user_profile_get($key) {
 	global $USER;
 	unset($value);
 	OC_Log::write( $appName,">>>>$key>>>>" . $USER[$key], OC_Log::DEBUG);
-	if (array_key_exists($key, $USER)) $value = $USER[$key];
+	if (array_key_exists($key, $USER)){
+                $value = $USER[$key];
+        }
 	return $value;
 }
 
@@ -327,7 +340,9 @@ OC_Log::write( $appName,"user profile parsed", OC_Log::DEBUG);
 //$USER["passkey"] - Server provided key
 
 //get passkey from header:
-if (array_key_exists("passkey", $_GET)) $passkey = $_GET["passkey"];
+if (!empty($pass)){
+    $passkey = $pass;
+}
 $authenticated = (bool)(
 	(
 		($sessid == user_profile_get("session"))
@@ -338,7 +353,7 @@ $authenticated = (bool)(
 if ($authenticated) {
 	OC_Log::write( $appName,"authenticated: $authenticated", OC_Log::DEBUG);
 } else {
-	OC_Log::write( $appName,"unauhenticated $authenticated", OC_Log::DEBUG);
+	OC_Log::write( $appName,"unauthenticated $authenticated", OC_Log::DEBUG);
 };
 //now user is authenticated
 if ($authenticated) {

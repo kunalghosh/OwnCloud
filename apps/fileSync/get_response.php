@@ -1,33 +1,4 @@
 <?php
-//include("files_fileSync.php"); //already included
-
-/*
-function file_load($filename, &$ARRAY) {
-	#lg("=====LOAD fn: $filename, count: " . count($ARRAY));
-	$ff = fopen($filename, "r");
-	$fc = fread($ff, filesize($filename));
-	#lg("filesize = " . filesize($filename));
-	#lg("all: $fc :lla");
-	fclose($ff);
-	$fA = explode("\n", $fc);
-	foreach ($fA as $fs) { //paramname, paramvalue
-		list($pn, $pv) = explode("=", $fs, 2);
-		$ARRAY[strtolower(trim($pn))] = trim($pv);
-	};
-};
-
-function file_save($filename, $ARRAY) {
-	#lg("=====SAVE fn: $filename, count: " . count($ARRAY));
-	#lg("all:");
-	$ff = fopen($filename, "w");
-	foreach ($ARRAY as $pn => $pv) { //paramname, paramvalue
-		fwrite($ff, "$pn=$pv\r\n");
-	#	lg("$pn=$pv");
-	};
-	fclose($ff);
-	#lg(":lla");
-};
-*/
 
 function get_response ($i,$source,$cmdref,$mesgid) {
     global $appName;
@@ -42,7 +13,8 @@ function put_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$datas) {
 		global $user_dir;
 		#$s_dir = $user_dir . "/" . $loc_srv;
 		$s_dir = $user_dir;
-		$f_state = $user_dir . "/" . $loc_srv . ".state";
+		//$f_state = $user_dir . "/" . $loc_srv . ".state";
+                $f_state = $loc_srv . ".state";
 		#lg("userdir: $user_dir; sdir: $s_dir; last: $f_state");
 		if (!OC_Filesystem::is_dir($s_dir)) OC_Filesystem::mkdir($s_dir);
 		#global $STATE;
@@ -67,7 +39,7 @@ function alert_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$type,$rlast,
 		global $user_dir;
 		#$s_dir = $user_dir . "/" . $loc_srv;
 		$s_dir = $user_dir;
-		$f_state = $user_dir . "/" . $loc_srv . "_" . $source . ".state";
+		$f_state = $loc_srv . "_" . $source . ".state";
 		OC_Log::write( $appName,"userdir: $user_dir; sdir: $s_dir; last: $f_state",  OC_Log::DEBUG);
 		if (! OC_Filesystem::is_dir($s_dir)) OC_Filesystem::mkdir($s_dir);
 		#global $STATE; #what for?.. commented out
@@ -122,7 +94,7 @@ function alert_response($i,$loc_cli,$loc_srv,$cmdref,$mesgid,$auth,$type,$rlast,
 		if (in_array($type, Array("201", "203", "205"))) {
 		//if ($type == "201") {
 			OC_Log::write( $appName,"slow sync required (anchors mismatch) -> discarding state",  OC_Log::DEBUG);
-			unlink($f_state); #slow sync -> discard state
+			OC_Filesystem::unlink($f_state); #slow sync -> discard state
 			#mapping will be lost!
 		};
 		unset($STATE);
@@ -156,36 +128,6 @@ function status_response($i,$comdref,$mesgid) {
 	$stat = "<Status><CmdID>$i</CmdID><MsgRef>$mesgid</MsgRef><CmdRef>$cmdref</CmdRef><Cmd>Alert</Cmd><TargetRef>./contacts</TargetRef><SourceRef>contacts</SourceRef><Data>200</Data><Item><Data><Anchor xmlns=\"syncml:metinf\"><Last>20050629T132132Z</Last><Next>20050629T154536Z</Next></Anchor></Data></Item></Status>\n";
 	//don't return anything
 }
-
-/////////////////////////////////////////////////////////////////
-/*
-function write_item($s_dir,$item,$data,$source) {
-if (! is_dir($s_dir)) mkdir($s_dir);
-$fitem = fopen($s_dir . "/" . $item, "w");
-fwrite($fitem, $data);
-fclose($fitem);
-$f_state = $s_dir . "_" . $source . ".state";
-#lg("fstate: $f_state");
-$STATE = Array();
-file_load($f_state, $STATE); #it can be faster to do append
-$STATE["hash_$item"] = md5($data);
-#lg("item: $item, md5: " . $STATE["hash_$item"]);
-file_save($f_state, $STATE);
-#DONE:don't forget to do unset($STATE[$item]) in Map function;
-}
-
-function remove_item($s_dir,$item,$source) {
-if (! is_dir($s_dir)) mkdir($s_dir);
-#lg("removing " . $s_dir . "/" . $item . ". is file" . (is_file($s_dir . "/" . $item) ? "true" : "false"));
-if (! unlink($s_dir . "/" . $item)) lg("unable to remove $s_dir/$item");
-$STATE = Array();
-$f_state = $s_dir . "_" . $source . ".state";
-file_load($f_state, $STATE);
-unset($STATE["hash_$item"]);
-file_save($f_state, $STATE);
-}
-*/ //moved to files_fileSync.php
-/////////////////////////////////////////////////////////////////
 
 function add_contact($i,$cmdref,$mesgid,$auth,$lcli,$lsrv,$item,$data,$source,$MoreData) {
     global $appName;
@@ -251,7 +193,7 @@ if ($auth) {
 		$result = "213"; //"Chunked item accepted and buffered" (c)
 		//Damn typo in spec's
 	} else {
-		$tmpfn = $s_dir . "/" . $item . ".tmp";
+		$tmpfn = "/" . $item . ".tmp";
 		OC_Log::write( $appName,"REPLACE CONTACT ---- $tmpfn",  OC_Log::DEBUG);
 		if (OC_Filesystem::file_exists($tmpfn))
 		{

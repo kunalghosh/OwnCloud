@@ -146,9 +146,6 @@ foreach ($DFiles as $file => $hash) {
 
 $twoway .= ""; #i forgot what for i prepared it..
 
-//file_save($f_state, $STATE);
-//lg("state saved to $f_state");
-
 return $twoway;
 }
 
@@ -174,7 +171,6 @@ if ($auth) {
 	$type = $STATE["type"];
 	unset($STATE);
 	#unset($STATE["$item"]);
-	//file_save($f_state, $STATE);
 	switch ($type) {
 		case "200":
 			//two-way

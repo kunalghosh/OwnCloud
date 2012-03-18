@@ -24,6 +24,7 @@ function file_load($filename, &$ARRAY) {
 
 function file_save($filename, $ARRAY) {
         global $appName;
+        OC_Log::write($appName, "Inside file_save Method", OC_Log::DEBUG);
 	OC_Log::write( $appName,"=====SAVE fn: $filename, count: " . count($ARRAY),  OC_Log::DEBUG);
 	OC_Log::write( $appName,"all:",  OC_Log::DEBUG);
 	$ff = OC_Filesystem::fopen($filename, "w");
